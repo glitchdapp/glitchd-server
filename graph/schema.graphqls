@@ -1,0 +1,246 @@
+scalar Time
+scalar UUID
+scalar JSON
+
+type User {
+  id: UUID!
+  email: String!
+  username: String!
+  name: String!
+  photo: String
+  phone: String
+  biography: String
+  links: [String]
+  stripe_customer_id: String!
+  is_verified: Boolean!
+  is_deactivated: Boolean!
+  is_email_verified: Boolean!
+  is_private: Boolean!
+  created_at: Time
+  last_login: Time
+  updated_at: Time
+}
+
+input NewUser {
+  name: String!
+  username: String!
+  email: String!
+}
+
+type Token {
+  id: UUID!
+  user_id: String!
+  token: String!
+  created_at: Time
+}
+
+type Waitlist {
+  id: UUID!
+  email: String!
+  status: String!
+  created_at: Time
+}
+
+input NewWaitlist {
+  email: String!
+}
+
+type App {
+  id: UUID!
+  name: String!
+  description: String
+  vanity: String!
+  socialImage: String
+  favicon: String
+  logo: String
+  owner_id: String!
+  web_type: String
+  theme: String
+  tier: String
+}
+
+input NewApp {
+  name: String!
+  description: String!
+  vanity: String!
+  owner_id: String!
+  tier: String!
+}
+
+input UpdateApp {
+  id: UUID!
+  name: String!
+  description: String
+  vanity: String!
+  socialImage: String
+  favicon: String
+  logo: String
+  owner_id: String!
+  web_type: String
+  theme: String
+  tier: String
+}
+
+type Page {
+  id: UUID!
+  app_id: String!
+  title: String!
+  description: String!
+  type: String!
+  components: [Component!]!
+}
+
+input NewPage {
+  app_id: String!
+  title: String!
+  description: String!
+  type: String!
+}
+
+input UpdatePage {
+  id: UUID!
+  app_id: String!
+  title: String!
+  description: String!
+  type: String!
+  components: [String!]!
+}
+
+type Attribute {
+  key: String!
+  value: [String]!
+}
+
+input AttributeInput {
+  key: String!
+  value: [String]!
+}
+
+type Component {
+  id: UUID!
+  type: String!
+  attributes: [Attribute!]!
+}
+
+input NewComponent {
+  type: String!
+  attributes: [AttributeInput!]!
+}
+
+type Membership {
+  id: UUID!
+  app_id: String!
+  tier: String!
+  status: String!
+  stripe_subscription_id: String!
+  stripe_checkout_session: String!
+}
+
+input NewMembership {
+  app_id: String!
+  user_id: String!
+  tier: String!
+  stripe_subscription_id: String!
+  stripe_checkout_session: String!
+}
+
+input UpdateMembership {
+    status: String!
+    tier: String!
+    stripe_subscription_id: String!
+    stripe_checkout_session: String!
+}
+
+type Subscriber {
+  id: UUID!
+  app: App!
+  user: User!
+  tier: String!
+  status: String!
+  stripe_subscription_id: String!
+  stripe_checkout_session: String!
+}
+
+input NewSubscriber {
+  app_id: String!
+  user_id: String!
+  tier: String!
+  stripe_subscription_id: String!
+  stripe_checkout_session: String! 
+}
+
+type Follower {
+  id: UUID!
+  user_id: String!
+  user: User!
+  target_id: String!
+  target: User!
+}
+
+input NewFollower {
+  id: String!
+  user_id: String!
+  target_id: String!
+}
+
+type Room {
+  id: UUID!
+  owner: User!
+  owner_id: String!
+  donations: [User!]!
+  subscriber_only: Boolean!
+}
+
+type Messages {
+  id: UUID!
+  room_id: String!
+  user: User!
+  user_id: String!
+  message: String!
+  badge: String!
+}
+
+type Mutation {
+  createUser(input: NewUser) : User
+  updateUser(id: String!, input: NewUser): User!
+  deleteUser(id: String!): User!
+
+  login(email: String!): String!
+  verifyToken(id: String!, token: String!) : String!
+  verifyEmail(id: String!, email: String!) : Boolean!
+
+  createApp(input: NewApp) : App!
+  updateApp(id: String!, input: UpdateApp!) : Boolean!
+  deleteApp(id: String!) : App!
+
+  createPage(input: NewPage!) : Page!
+  updatePage(id: String!, input: UpdatePage!) : Boolean!
+  deletePage(id: String!) : Boolean!
+
+  updateMembership(id: String!, input: UpdateMembership!) : Boolean!
+
+  follow(input: NewFollower!): Follower!
+}
+
+type Subscription {
+  getMessages(roomId: String!) : [Messages]
+}
+
+type Query {
+  users: [User!]!
+  user(id: ID!): User!
+  getUserByUsername(username: String!): User!
+  getUserByEmail(email: String!): User!
+  searchUsers(query: String!) : [User!]!
+  getMembership(app_id: String!) : Membership!
+  getMembershipBySession(session_id: String!): Membership!
+  getApps(user_id: String!) : [App!]!
+  getApp(id: String!) : App!
+  getAppByVanity(vanity: String!) : App!
+  getUserApp(user_id: String!, vanity: String!) : App!
+  getUserApps(user_id: String!) : [App!]!
+  getPages(app_id: String!) : [Page!]!
+  getPage(id: String!) : Page!
+
+  getFollowers(target_id: String) : [Follower!]!
+}
