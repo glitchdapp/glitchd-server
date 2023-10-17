@@ -36,14 +36,6 @@ type Component struct {
 	Attributes []*Attribute `json:"attributes"`
 }
 
-type Follower struct {
-	ID       string `json:"id"`
-	UserID   string `json:"user_id"`
-	User     *User  `json:"user"`
-	TargetID string `json:"target_id"`
-	Target   *User  `json:"target"`
-}
-
 type Membership struct {
 	ID                    string `json:"id"`
 	AppID                 string `json:"app_id"`
@@ -51,15 +43,6 @@ type Membership struct {
 	Status                string `json:"status"`
 	StripeSubscriptionID  string `json:"stripe_subscription_id"`
 	StripeCheckoutSession string `json:"stripe_checkout_session"`
-}
-
-type Messages struct {
-	ID      string `json:"id"`
-	RoomID  string `json:"room_id"`
-	User    *User  `json:"user"`
-	UserID  string `json:"user_id"`
-	Message string `json:"message"`
-	Badge   string `json:"badge"`
 }
 
 type NewApp struct {
@@ -73,12 +56,6 @@ type NewApp struct {
 type NewComponent struct {
 	Type       string            `json:"type"`
 	Attributes []*AttributeInput `json:"attributes"`
-}
-
-type NewFollower struct {
-	ID       string `json:"id"`
-	UserID   string `json:"user_id"`
-	TargetID string `json:"target_id"`
 }
 
 type NewMembership struct {
@@ -121,14 +98,6 @@ type Page struct {
 	Description string       `json:"description"`
 	Type        string       `json:"type"`
 	Components  []*Component `json:"components"`
-}
-
-type Room struct {
-	ID             string  `json:"id"`
-	Owner          *User   `json:"owner"`
-	OwnerID        string  `json:"owner_id"`
-	Donations      []*User `json:"donations"`
-	SubscriberOnly bool    `json:"subscriber_only"`
 }
 
 type Subscriber struct {
@@ -200,6 +169,6 @@ type User struct {
 type Waitlist struct {
 	ID        string     `json:"id"`
 	Email     string     `json:"email"`
-	Status    string     `json:"status"`
+	CanEnter  bool       `json:"canEnter"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 }

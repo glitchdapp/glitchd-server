@@ -124,12 +124,14 @@ func (db *BUN) createWaitlistTable() {
 }
 
 func (db *BUN) InitTables() *BUN {
+	// generate tables in db
 	db.createUserTable()
 	db.createTokenTable()
 	db.createAppTable()
 	db.createMembershipTable()
 	db.createPagesTable()
 	db.createComponentsTable()
+	db.createWaitlistTable()
 
 	fmt.Println("Initialized Tables")
 

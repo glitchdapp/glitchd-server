@@ -1,6 +1,11 @@
+directive @goField(forceResolver: Boolean, name: String) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @auth on FIELD_DEFINITION
+
 scalar Time
 scalar UUID
 scalar JSON
+scalar Any
 
 type User {
   id: UUID!
@@ -37,7 +42,7 @@ type Token {
 type Waitlist {
   id: UUID!
   email: String!
-  status: String!
+  canEnter: Boolean!
   created_at: Time
 }
 
@@ -169,37 +174,6 @@ input NewSubscriber {
   stripe_checkout_session: String! 
 }
 
-type Follower {
-  id: UUID!
-  user_id: String!
-  user: User!
-  target_id: String!
-  target: User!
-}
-
-input NewFollower {
-  id: String!
-  user_id: String!
-  target_id: String!
-}
-
-type Room {
-  id: UUID!
-  owner: User!
-  owner_id: String!
-  donations: [User!]!
-  subscriber_only: Boolean!
-}
-
-type Messages {
-  id: UUID!
-  room_id: String!
-  user: User!
-  user_id: String!
-  message: String!
-  badge: String!
-}
-
 type Mutation {
   createUser(input: NewUser) : User
   updateUser(id: String!, input: NewUser): User!
@@ -219,18 +193,15 @@ type Mutation {
 
   updateMembership(id: String!, input: UpdateMembership!) : Boolean!
 
-  follow(input: NewFollower!): Follower!
-}
-
-type Subscription {
-  getMessages(roomId: String!) : [Messages]
+  addToWaitlist(input: NewWaitlist!) : Waitlist!
+  updateWaitlistEntry(email: String!, canEnter: Boolean!) : Waitlist!
 }
 
 type Query {
-  users: [User!]!
-  user(id: ID!): User!
+  users: [User!]! @auth
+  user(id: ID!): User! @auth
   getUserByUsername(username: String!): User!
-  getUserByEmail(email: String!): User!
+  getUserByEmail(email: String!): User! @auth
   searchUsers(query: String!) : [User!]!
   getMembership(app_id: String!) : Membership!
   getMembershipBySession(session_id: String!): Membership!
@@ -242,5 +213,5 @@ type Query {
   getPages(app_id: String!) : [Page!]!
   getPage(id: String!) : Page!
 
-  getFollowers(target_id: String) : [Follower!]!
+  getWaitlist(email: String!) : Waitlist!
 }

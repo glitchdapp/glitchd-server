@@ -8,7 +8,6 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -41,10 +40,10 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
-	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
+	Auth func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -73,14 +72,6 @@ type ComplexityRoot struct {
 		Type       func(childComplexity int) int
 	}
 
-	Follower struct {
-		ID       func(childComplexity int) int
-		Target   func(childComplexity int) int
-		TargetID func(childComplexity int) int
-		User     func(childComplexity int) int
-		UserID   func(childComplexity int) int
-	}
-
 	Membership struct {
 		AppID                 func(childComplexity int) int
 		ID                    func(childComplexity int) int
@@ -90,30 +81,22 @@ type ComplexityRoot struct {
 		Tier                  func(childComplexity int) int
 	}
 
-	Messages struct {
-		Badge   func(childComplexity int) int
-		ID      func(childComplexity int) int
-		Message func(childComplexity int) int
-		RoomID  func(childComplexity int) int
-		User    func(childComplexity int) int
-		UserID  func(childComplexity int) int
-	}
-
 	Mutation struct {
-		CreateApp        func(childComplexity int, input *model.NewApp) int
-		CreatePage       func(childComplexity int, input model.NewPage) int
-		CreateUser       func(childComplexity int, input *model.NewUser) int
-		DeleteApp        func(childComplexity int, id string) int
-		DeletePage       func(childComplexity int, id string) int
-		DeleteUser       func(childComplexity int, id string) int
-		Follow           func(childComplexity int, input model.NewFollower) int
-		Login            func(childComplexity int, email string) int
-		UpdateApp        func(childComplexity int, id string, input model.UpdateApp) int
-		UpdateMembership func(childComplexity int, id string, input model.UpdateMembership) int
-		UpdatePage       func(childComplexity int, id string, input model.UpdatePage) int
-		UpdateUser       func(childComplexity int, id string, input *model.NewUser) int
-		VerifyEmail      func(childComplexity int, id string, email string) int
-		VerifyToken      func(childComplexity int, id string, token string) int
+		AddToWaitlist       func(childComplexity int, input model.NewWaitlist) int
+		CreateApp           func(childComplexity int, input *model.NewApp) int
+		CreatePage          func(childComplexity int, input model.NewPage) int
+		CreateUser          func(childComplexity int, input *model.NewUser) int
+		DeleteApp           func(childComplexity int, id string) int
+		DeletePage          func(childComplexity int, id string) int
+		DeleteUser          func(childComplexity int, id string) int
+		Login               func(childComplexity int, email string) int
+		UpdateApp           func(childComplexity int, id string, input model.UpdateApp) int
+		UpdateMembership    func(childComplexity int, id string, input model.UpdateMembership) int
+		UpdatePage          func(childComplexity int, id string, input model.UpdatePage) int
+		UpdateUser          func(childComplexity int, id string, input *model.NewUser) int
+		UpdateWaitlistEntry func(childComplexity int, email string, canEnter bool) int
+		VerifyEmail         func(childComplexity int, id string, email string) int
+		VerifyToken         func(childComplexity int, id string, token string) int
 	}
 
 	Page struct {
@@ -129,7 +112,6 @@ type ComplexityRoot struct {
 		GetApp                 func(childComplexity int, id string) int
 		GetAppByVanity         func(childComplexity int, vanity string) int
 		GetApps                func(childComplexity int, userID string) int
-		GetFollowers           func(childComplexity int, targetID *string) int
 		GetMembership          func(childComplexity int, appID string) int
 		GetMembershipBySession func(childComplexity int, sessionID string) int
 		GetPage                func(childComplexity int, id string) int
@@ -138,17 +120,10 @@ type ComplexityRoot struct {
 		GetUserApps            func(childComplexity int, userID string) int
 		GetUserByEmail         func(childComplexity int, email string) int
 		GetUserByUsername      func(childComplexity int, username string) int
+		GetWaitlist            func(childComplexity int, email string) int
 		SearchUsers            func(childComplexity int, query string) int
 		User                   func(childComplexity int, id string) int
 		Users                  func(childComplexity int) int
-	}
-
-	Room struct {
-		Donations      func(childComplexity int) int
-		ID             func(childComplexity int) int
-		Owner          func(childComplexity int) int
-		OwnerID        func(childComplexity int) int
-		SubscriberOnly func(childComplexity int) int
 	}
 
 	Subscriber struct {
@@ -159,10 +134,6 @@ type ComplexityRoot struct {
 		StripeSubscriptionID  func(childComplexity int) int
 		Tier                  func(childComplexity int) int
 		User                  func(childComplexity int) int
-	}
-
-	Subscription struct {
-		GetMessages func(childComplexity int, roomID string) int
 	}
 
 	Token struct {
@@ -192,10 +163,10 @@ type ComplexityRoot struct {
 	}
 
 	Waitlist struct {
+		CanEnter  func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		Email     func(childComplexity int) int
 		ID        func(childComplexity int) int
-		Status    func(childComplexity int) int
 	}
 }
 
@@ -213,7 +184,8 @@ type MutationResolver interface {
 	UpdatePage(ctx context.Context, id string, input model.UpdatePage) (bool, error)
 	DeletePage(ctx context.Context, id string) (bool, error)
 	UpdateMembership(ctx context.Context, id string, input model.UpdateMembership) (bool, error)
-	Follow(ctx context.Context, input model.NewFollower) (*model.Follower, error)
+	AddToWaitlist(ctx context.Context, input model.NewWaitlist) (*model.Waitlist, error)
+	UpdateWaitlistEntry(ctx context.Context, email string, canEnter bool) (*model.Waitlist, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context) ([]*model.User, error)
@@ -230,10 +202,7 @@ type QueryResolver interface {
 	GetUserApps(ctx context.Context, userID string) ([]*model.App, error)
 	GetPages(ctx context.Context, appID string) ([]*model.Page, error)
 	GetPage(ctx context.Context, id string) (*model.Page, error)
-	GetFollowers(ctx context.Context, targetID *string) ([]*model.Follower, error)
-}
-type SubscriptionResolver interface {
-	GetMessages(ctx context.Context, roomID string) (<-chan []*model.Messages, error)
+	GetWaitlist(ctx context.Context, email string) (*model.Waitlist, error)
 }
 
 type executableSchema struct {
@@ -363,41 +332,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Component.Type(childComplexity), true
 
-	case "Follower.id":
-		if e.complexity.Follower.ID == nil {
-			break
-		}
-
-		return e.complexity.Follower.ID(childComplexity), true
-
-	case "Follower.target":
-		if e.complexity.Follower.Target == nil {
-			break
-		}
-
-		return e.complexity.Follower.Target(childComplexity), true
-
-	case "Follower.target_id":
-		if e.complexity.Follower.TargetID == nil {
-			break
-		}
-
-		return e.complexity.Follower.TargetID(childComplexity), true
-
-	case "Follower.user":
-		if e.complexity.Follower.User == nil {
-			break
-		}
-
-		return e.complexity.Follower.User(childComplexity), true
-
-	case "Follower.user_id":
-		if e.complexity.Follower.UserID == nil {
-			break
-		}
-
-		return e.complexity.Follower.UserID(childComplexity), true
-
 	case "Membership.app_id":
 		if e.complexity.Membership.AppID == nil {
 			break
@@ -440,47 +374,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Membership.Tier(childComplexity), true
 
-	case "Messages.badge":
-		if e.complexity.Messages.Badge == nil {
+	case "Mutation.addToWaitlist":
+		if e.complexity.Mutation.AddToWaitlist == nil {
 			break
 		}
 
-		return e.complexity.Messages.Badge(childComplexity), true
-
-	case "Messages.id":
-		if e.complexity.Messages.ID == nil {
-			break
+		args, err := ec.field_Mutation_addToWaitlist_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
 		}
 
-		return e.complexity.Messages.ID(childComplexity), true
-
-	case "Messages.message":
-		if e.complexity.Messages.Message == nil {
-			break
-		}
-
-		return e.complexity.Messages.Message(childComplexity), true
-
-	case "Messages.room_id":
-		if e.complexity.Messages.RoomID == nil {
-			break
-		}
-
-		return e.complexity.Messages.RoomID(childComplexity), true
-
-	case "Messages.user":
-		if e.complexity.Messages.User == nil {
-			break
-		}
-
-		return e.complexity.Messages.User(childComplexity), true
-
-	case "Messages.user_id":
-		if e.complexity.Messages.UserID == nil {
-			break
-		}
-
-		return e.complexity.Messages.UserID(childComplexity), true
+		return e.complexity.Mutation.AddToWaitlist(childComplexity, args["input"].(model.NewWaitlist)), true
 
 	case "Mutation.createApp":
 		if e.complexity.Mutation.CreateApp == nil {
@@ -554,18 +458,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteUser(childComplexity, args["id"].(string)), true
 
-	case "Mutation.follow":
-		if e.complexity.Mutation.Follow == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_follow_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.Follow(childComplexity, args["input"].(model.NewFollower)), true
-
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
 			break
@@ -625,6 +517,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["input"].(*model.NewUser)), true
+
+	case "Mutation.updateWaitlistEntry":
+		if e.complexity.Mutation.UpdateWaitlistEntry == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateWaitlistEntry_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateWaitlistEntry(childComplexity, args["email"].(string), args["canEnter"].(bool)), true
 
 	case "Mutation.verifyEmail":
 		if e.complexity.Mutation.VerifyEmail == nil {
@@ -728,18 +632,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetApps(childComplexity, args["user_id"].(string)), true
 
-	case "Query.getFollowers":
-		if e.complexity.Query.GetFollowers == nil {
-			break
-		}
-
-		args, err := ec.field_Query_getFollowers_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.GetFollowers(childComplexity, args["target_id"].(*string)), true
-
 	case "Query.getMembership":
 		if e.complexity.Query.GetMembership == nil {
 			break
@@ -836,6 +728,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetUserByUsername(childComplexity, args["username"].(string)), true
 
+	case "Query.getWaitlist":
+		if e.complexity.Query.GetWaitlist == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getWaitlist_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetWaitlist(childComplexity, args["email"].(string)), true
+
 	case "Query.searchUsers":
 		if e.complexity.Query.SearchUsers == nil {
 			break
@@ -866,41 +770,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Users(childComplexity), true
-
-	case "Room.donations":
-		if e.complexity.Room.Donations == nil {
-			break
-		}
-
-		return e.complexity.Room.Donations(childComplexity), true
-
-	case "Room.id":
-		if e.complexity.Room.ID == nil {
-			break
-		}
-
-		return e.complexity.Room.ID(childComplexity), true
-
-	case "Room.owner":
-		if e.complexity.Room.Owner == nil {
-			break
-		}
-
-		return e.complexity.Room.Owner(childComplexity), true
-
-	case "Room.owner_id":
-		if e.complexity.Room.OwnerID == nil {
-			break
-		}
-
-		return e.complexity.Room.OwnerID(childComplexity), true
-
-	case "Room.subscriber_only":
-		if e.complexity.Room.SubscriberOnly == nil {
-			break
-		}
-
-		return e.complexity.Room.SubscriberOnly(childComplexity), true
 
 	case "Subscriber.app":
 		if e.complexity.Subscriber.App == nil {
@@ -950,18 +819,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Subscriber.User(childComplexity), true
-
-	case "Subscription.getMessages":
-		if e.complexity.Subscription.GetMessages == nil {
-			break
-		}
-
-		args, err := ec.field_Subscription_getMessages_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Subscription.GetMessages(childComplexity, args["roomId"].(string)), true
 
 	case "Token.created_at":
 		if e.complexity.Token.CreatedAt == nil {
@@ -1103,6 +960,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Username(childComplexity), true
 
+	case "Waitlist.canEnter":
+		if e.complexity.Waitlist.CanEnter == nil {
+			break
+		}
+
+		return e.complexity.Waitlist.CanEnter(childComplexity), true
+
 	case "Waitlist.created_at":
 		if e.complexity.Waitlist.CreatedAt == nil {
 			break
@@ -1124,13 +988,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Waitlist.ID(childComplexity), true
 
-	case "Waitlist.status":
-		if e.complexity.Waitlist.Status == nil {
-			break
-		}
-
-		return e.complexity.Waitlist.Status(childComplexity), true
-
 	}
 	return 0, false
 }
@@ -1142,7 +999,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAttributeInput,
 		ec.unmarshalInputNewApp,
 		ec.unmarshalInputNewComponent,
-		ec.unmarshalInputNewFollower,
 		ec.unmarshalInputNewMembership,
 		ec.unmarshalInputNewPage,
 		ec.unmarshalInputNewSubscriber,
@@ -1194,23 +1050,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
 			var buf bytes.Buffer
-			data.MarshalGQL(&buf)
-
-			return &graphql.Response{
-				Data: buf.Bytes(),
-			}
-		}
-	case ast.Subscription:
-		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
-
-		var buf bytes.Buffer
-		return func(ctx context.Context) *graphql.Response {
-			buf.Reset()
-			data := next(ctx)
-
-			if data == nil {
-				return nil
-			}
 			data.MarshalGQL(&buf)
 
 			return &graphql.Response{
@@ -1283,6 +1122,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_addToWaitlist_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.NewWaitlist
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNNewWaitlist2githubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐNewWaitlist(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createApp_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1371,21 +1225,6 @@ func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, 
 		}
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_follow_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewFollower
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewFollower2githubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐNewFollower(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
 	return args, nil
 }
 
@@ -1500,6 +1339,30 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateWaitlistEntry_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["email"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["email"] = arg0
+	var arg1 bool
+	if tmp, ok := rawArgs["canEnter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("canEnter"))
+		arg1, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["canEnter"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_verifyEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1605,21 +1468,6 @@ func (ec *executionContext) field_Query_getApps_args(ctx context.Context, rawArg
 		}
 	}
 	args["user_id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_getFollowers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *string
-	if tmp, ok := rawArgs["target_id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("target_id"))
-		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["target_id"] = arg0
 	return args, nil
 }
 
@@ -1752,6 +1600,21 @@ func (ec *executionContext) field_Query_getUserByUsername_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_getWaitlist_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["email"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["email"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_searchUsers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1779,21 +1642,6 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 		}
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Subscription_getMessages_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["roomId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roomId"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["roomId"] = arg0
 	return args, nil
 }
 
@@ -2524,294 +2372,6 @@ func (ec *executionContext) fieldContext_Component_attributes(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Follower_id(ctx context.Context, field graphql.CollectedField, obj *model.Follower) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Follower_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNUUID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Follower_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Follower",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type UUID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Follower_user_id(ctx context.Context, field graphql.CollectedField, obj *model.Follower) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Follower_user_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UserID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Follower_user_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Follower",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Follower_user(ctx context.Context, field graphql.CollectedField, obj *model.Follower) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Follower_user(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Follower_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Follower",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "username":
-				return ec.fieldContext_User_username(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "photo":
-				return ec.fieldContext_User_photo(ctx, field)
-			case "phone":
-				return ec.fieldContext_User_phone(ctx, field)
-			case "biography":
-				return ec.fieldContext_User_biography(ctx, field)
-			case "links":
-				return ec.fieldContext_User_links(ctx, field)
-			case "stripe_customer_id":
-				return ec.fieldContext_User_stripe_customer_id(ctx, field)
-			case "is_verified":
-				return ec.fieldContext_User_is_verified(ctx, field)
-			case "is_deactivated":
-				return ec.fieldContext_User_is_deactivated(ctx, field)
-			case "is_email_verified":
-				return ec.fieldContext_User_is_email_verified(ctx, field)
-			case "is_private":
-				return ec.fieldContext_User_is_private(ctx, field)
-			case "created_at":
-				return ec.fieldContext_User_created_at(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
-			case "updated_at":
-				return ec.fieldContext_User_updated_at(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Follower_target_id(ctx context.Context, field graphql.CollectedField, obj *model.Follower) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Follower_target_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TargetID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Follower_target_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Follower",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Follower_target(ctx context.Context, field graphql.CollectedField, obj *model.Follower) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Follower_target(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Target, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Follower_target(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Follower",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "username":
-				return ec.fieldContext_User_username(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "photo":
-				return ec.fieldContext_User_photo(ctx, field)
-			case "phone":
-				return ec.fieldContext_User_phone(ctx, field)
-			case "biography":
-				return ec.fieldContext_User_biography(ctx, field)
-			case "links":
-				return ec.fieldContext_User_links(ctx, field)
-			case "stripe_customer_id":
-				return ec.fieldContext_User_stripe_customer_id(ctx, field)
-			case "is_verified":
-				return ec.fieldContext_User_is_verified(ctx, field)
-			case "is_deactivated":
-				return ec.fieldContext_User_is_deactivated(ctx, field)
-			case "is_email_verified":
-				return ec.fieldContext_User_is_email_verified(ctx, field)
-			case "is_private":
-				return ec.fieldContext_User_is_private(ctx, field)
-			case "created_at":
-				return ec.fieldContext_User_created_at(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
-			case "updated_at":
-				return ec.fieldContext_User_updated_at(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Membership_id(ctx context.Context, field graphql.CollectedField, obj *model.Membership) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Membership_id(ctx, field)
 	if err != nil {
@@ -3066,304 +2626,6 @@ func (ec *executionContext) _Membership_stripe_checkout_session(ctx context.Cont
 func (ec *executionContext) fieldContext_Membership_stripe_checkout_session(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Membership",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Messages_id(ctx context.Context, field graphql.CollectedField, obj *model.Messages) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Messages_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNUUID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Messages_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Messages",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type UUID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Messages_room_id(ctx context.Context, field graphql.CollectedField, obj *model.Messages) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Messages_room_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.RoomID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Messages_room_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Messages",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Messages_user(ctx context.Context, field graphql.CollectedField, obj *model.Messages) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Messages_user(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Messages_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Messages",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "username":
-				return ec.fieldContext_User_username(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "photo":
-				return ec.fieldContext_User_photo(ctx, field)
-			case "phone":
-				return ec.fieldContext_User_phone(ctx, field)
-			case "biography":
-				return ec.fieldContext_User_biography(ctx, field)
-			case "links":
-				return ec.fieldContext_User_links(ctx, field)
-			case "stripe_customer_id":
-				return ec.fieldContext_User_stripe_customer_id(ctx, field)
-			case "is_verified":
-				return ec.fieldContext_User_is_verified(ctx, field)
-			case "is_deactivated":
-				return ec.fieldContext_User_is_deactivated(ctx, field)
-			case "is_email_verified":
-				return ec.fieldContext_User_is_email_verified(ctx, field)
-			case "is_private":
-				return ec.fieldContext_User_is_private(ctx, field)
-			case "created_at":
-				return ec.fieldContext_User_created_at(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
-			case "updated_at":
-				return ec.fieldContext_User_updated_at(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Messages_user_id(ctx context.Context, field graphql.CollectedField, obj *model.Messages) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Messages_user_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UserID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Messages_user_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Messages",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Messages_message(ctx context.Context, field graphql.CollectedField, obj *model.Messages) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Messages_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Messages_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Messages",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Messages_badge(ctx context.Context, field graphql.CollectedField, obj *model.Messages) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Messages_badge(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Badge, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Messages_badge(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Messages",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -4250,8 +3512,8 @@ func (ec *executionContext) fieldContext_Mutation_updateMembership(ctx context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_follow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_follow(ctx, field)
+func (ec *executionContext) _Mutation_addToWaitlist(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_addToWaitlist(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4264,7 +3526,7 @@ func (ec *executionContext) _Mutation_follow(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Follow(rctx, fc.Args["input"].(model.NewFollower))
+		return ec.resolvers.Mutation().AddToWaitlist(rctx, fc.Args["input"].(model.NewWaitlist))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4276,12 +3538,12 @@ func (ec *executionContext) _Mutation_follow(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Follower)
+	res := resTmp.(*model.Waitlist)
 	fc.Result = res
-	return ec.marshalNFollower2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐFollower(ctx, field.Selections, res)
+	return ec.marshalNWaitlist2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐWaitlist(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_follow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_addToWaitlist(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -4290,17 +3552,15 @@ func (ec *executionContext) fieldContext_Mutation_follow(ctx context.Context, fi
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Follower_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Follower_user_id(ctx, field)
-			case "user":
-				return ec.fieldContext_Follower_user(ctx, field)
-			case "target_id":
-				return ec.fieldContext_Follower_target_id(ctx, field)
-			case "target":
-				return ec.fieldContext_Follower_target(ctx, field)
+				return ec.fieldContext_Waitlist_id(ctx, field)
+			case "email":
+				return ec.fieldContext_Waitlist_email(ctx, field)
+			case "canEnter":
+				return ec.fieldContext_Waitlist_canEnter(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Waitlist_created_at(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Follower", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Waitlist", field.Name)
 		},
 	}
 	defer func() {
@@ -4310,7 +3570,72 @@ func (ec *executionContext) fieldContext_Mutation_follow(ctx context.Context, fi
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_follow_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_addToWaitlist_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateWaitlistEntry(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateWaitlistEntry(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateWaitlistEntry(rctx, fc.Args["email"].(string), fc.Args["canEnter"].(bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Waitlist)
+	fc.Result = res
+	return ec.marshalNWaitlist2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐWaitlist(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateWaitlistEntry(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Waitlist_id(ctx, field)
+			case "email":
+				return ec.fieldContext_Waitlist_email(ctx, field)
+			case "canEnter":
+				return ec.fieldContext_Waitlist_canEnter(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Waitlist_created_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Waitlist", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateWaitlistEntry_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4602,8 +3927,28 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Users(rctx)
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Users(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Auth == nil {
+				return nil, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/prizmsol/prizmsol-server/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4680,8 +4025,28 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().User(rctx, fc.Args["id"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().User(rctx, fc.Args["id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Auth == nil {
+				return nil, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/prizmsol/prizmsol-server/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5694,8 +5059,8 @@ func (ec *executionContext) fieldContext_Query_getPage(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_getFollowers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getFollowers(ctx, field)
+func (ec *executionContext) _Query_getWaitlist(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getWaitlist(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -5708,7 +5073,7 @@ func (ec *executionContext) _Query_getFollowers(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetFollowers(rctx, fc.Args["target_id"].(*string))
+		return ec.resolvers.Query().GetWaitlist(rctx, fc.Args["email"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5720,12 +5085,12 @@ func (ec *executionContext) _Query_getFollowers(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Follower)
+	res := resTmp.(*model.Waitlist)
 	fc.Result = res
-	return ec.marshalNFollower2ᚕᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐFollowerᚄ(ctx, field.Selections, res)
+	return ec.marshalNWaitlist2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐWaitlist(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getFollowers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getWaitlist(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -5734,17 +5099,15 @@ func (ec *executionContext) fieldContext_Query_getFollowers(ctx context.Context,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Follower_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Follower_user_id(ctx, field)
-			case "user":
-				return ec.fieldContext_Follower_user(ctx, field)
-			case "target_id":
-				return ec.fieldContext_Follower_target_id(ctx, field)
-			case "target":
-				return ec.fieldContext_Follower_target(ctx, field)
+				return ec.fieldContext_Waitlist_id(ctx, field)
+			case "email":
+				return ec.fieldContext_Waitlist_email(ctx, field)
+			case "canEnter":
+				return ec.fieldContext_Waitlist_canEnter(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Waitlist_created_at(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Follower", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Waitlist", field.Name)
 		},
 	}
 	defer func() {
@@ -5754,7 +5117,7 @@ func (ec *executionContext) fieldContext_Query_getFollowers(ctx context.Context,
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_getFollowers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_getWaitlist_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5885,294 +5248,6 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Room_id(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Room_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNUUID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Room_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Room",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type UUID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Room_owner(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Room_owner(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Owner, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Room_owner(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Room",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "username":
-				return ec.fieldContext_User_username(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "photo":
-				return ec.fieldContext_User_photo(ctx, field)
-			case "phone":
-				return ec.fieldContext_User_phone(ctx, field)
-			case "biography":
-				return ec.fieldContext_User_biography(ctx, field)
-			case "links":
-				return ec.fieldContext_User_links(ctx, field)
-			case "stripe_customer_id":
-				return ec.fieldContext_User_stripe_customer_id(ctx, field)
-			case "is_verified":
-				return ec.fieldContext_User_is_verified(ctx, field)
-			case "is_deactivated":
-				return ec.fieldContext_User_is_deactivated(ctx, field)
-			case "is_email_verified":
-				return ec.fieldContext_User_is_email_verified(ctx, field)
-			case "is_private":
-				return ec.fieldContext_User_is_private(ctx, field)
-			case "created_at":
-				return ec.fieldContext_User_created_at(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
-			case "updated_at":
-				return ec.fieldContext_User_updated_at(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Room_owner_id(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Room_owner_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.OwnerID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Room_owner_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Room",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Room_donations(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Room_donations(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Donations, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Room_donations(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Room",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "username":
-				return ec.fieldContext_User_username(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "photo":
-				return ec.fieldContext_User_photo(ctx, field)
-			case "phone":
-				return ec.fieldContext_User_phone(ctx, field)
-			case "biography":
-				return ec.fieldContext_User_biography(ctx, field)
-			case "links":
-				return ec.fieldContext_User_links(ctx, field)
-			case "stripe_customer_id":
-				return ec.fieldContext_User_stripe_customer_id(ctx, field)
-			case "is_verified":
-				return ec.fieldContext_User_is_verified(ctx, field)
-			case "is_deactivated":
-				return ec.fieldContext_User_is_deactivated(ctx, field)
-			case "is_email_verified":
-				return ec.fieldContext_User_is_email_verified(ctx, field)
-			case "is_private":
-				return ec.fieldContext_User_is_private(ctx, field)
-			case "created_at":
-				return ec.fieldContext_User_created_at(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
-			case "updated_at":
-				return ec.fieldContext_User_updated_at(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Room_subscriber_only(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Room_subscriber_only(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SubscriberOnly, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Room_subscriber_only(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Room",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6540,86 +5615,6 @@ func (ec *executionContext) fieldContext_Subscriber_stripe_checkout_session(ctx 
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Subscription_getMessages(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
-	fc, err := ec.fieldContext_Subscription_getMessages(ctx, field)
-	if err != nil {
-		return nil
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = nil
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().GetMessages(rctx, fc.Args["roomId"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return nil
-	}
-	if resTmp == nil {
-		return nil
-	}
-	return func(ctx context.Context) graphql.Marshaler {
-		select {
-		case res, ok := <-resTmp.(<-chan []*model.Messages):
-			if !ok {
-				return nil
-			}
-			return graphql.WriterFunc(func(w io.Writer) {
-				w.Write([]byte{'{'})
-				graphql.MarshalString(field.Alias).MarshalGQL(w)
-				w.Write([]byte{':'})
-				ec.marshalOMessages2ᚕᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐMessages(ctx, field.Selections, res).MarshalGQL(w)
-				w.Write([]byte{'}'})
-			})
-		case <-ctx.Done():
-			return nil
-		}
-	}
-}
-
-func (ec *executionContext) fieldContext_Subscription_getMessages(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Subscription",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Messages_id(ctx, field)
-			case "room_id":
-				return ec.fieldContext_Messages_room_id(ctx, field)
-			case "user":
-				return ec.fieldContext_Messages_user(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Messages_user_id(ctx, field)
-			case "message":
-				return ec.fieldContext_Messages_message(ctx, field)
-			case "badge":
-				return ec.fieldContext_Messages_badge(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Messages", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Subscription_getMessages_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
 	}
 	return fc, nil
 }
@@ -7568,8 +6563,8 @@ func (ec *executionContext) fieldContext_Waitlist_email(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Waitlist_status(ctx context.Context, field graphql.CollectedField, obj *model.Waitlist) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Waitlist_status(ctx, field)
+func (ec *executionContext) _Waitlist_canEnter(ctx context.Context, field graphql.CollectedField, obj *model.Waitlist) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Waitlist_canEnter(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -7582,7 +6577,7 @@ func (ec *executionContext) _Waitlist_status(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Status, nil
+		return obj.CanEnter, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7594,19 +6589,19 @@ func (ec *executionContext) _Waitlist_status(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Waitlist_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Waitlist_canEnter(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Waitlist",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9567,53 +8562,6 @@ func (ec *executionContext) unmarshalInputNewComponent(ctx context.Context, obj 
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputNewFollower(ctx context.Context, obj interface{}) (model.NewFollower, error) {
-	var it model.NewFollower
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"id", "user_id", "target_id"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		case "user_id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.UserID = data
-		case "target_id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("target_id"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TargetID = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputNewMembership(ctx context.Context, obj interface{}) (model.NewMembership, error) {
 	var it model.NewMembership
 	asMap := map[string]interface{}{}
@@ -10294,65 +9242,6 @@ func (ec *executionContext) _Component(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
-var followerImplementors = []string{"Follower"}
-
-func (ec *executionContext) _Follower(ctx context.Context, sel ast.SelectionSet, obj *model.Follower) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, followerImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Follower")
-		case "id":
-			out.Values[i] = ec._Follower_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "user_id":
-			out.Values[i] = ec._Follower_user_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "user":
-			out.Values[i] = ec._Follower_user(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "target_id":
-			out.Values[i] = ec._Follower_target_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "target":
-			out.Values[i] = ec._Follower_target(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var membershipImplementors = []string{"Membership"}
 
 func (ec *executionContext) _Membership(ctx context.Context, sel ast.SelectionSet, obj *model.Membership) graphql.Marshaler {
@@ -10391,70 +9280,6 @@ func (ec *executionContext) _Membership(ctx context.Context, sel ast.SelectionSe
 			}
 		case "stripe_checkout_session":
 			out.Values[i] = ec._Membership_stripe_checkout_session(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var messagesImplementors = []string{"Messages"}
-
-func (ec *executionContext) _Messages(ctx context.Context, sel ast.SelectionSet, obj *model.Messages) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, messagesImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Messages")
-		case "id":
-			out.Values[i] = ec._Messages_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "room_id":
-			out.Values[i] = ec._Messages_room_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "user":
-			out.Values[i] = ec._Messages_user(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "user_id":
-			out.Values[i] = ec._Messages_user_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "message":
-			out.Values[i] = ec._Messages_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "badge":
-			out.Values[i] = ec._Messages_badge(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10588,9 +9413,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "follow":
+		case "addToWaitlist":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_follow(ctx, field)
+				return ec._Mutation_addToWaitlist(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateWaitlistEntry":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateWaitlistEntry(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -11009,7 +9841,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "getFollowers":
+		case "getWaitlist":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -11018,7 +9850,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getFollowers(ctx, field)
+				res = ec._Query_getWaitlist(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -11039,65 +9871,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var roomImplementors = []string{"Room"}
-
-func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj *model.Room) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, roomImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Room")
-		case "id":
-			out.Values[i] = ec._Room_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "owner":
-			out.Values[i] = ec._Room_owner(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "owner_id":
-			out.Values[i] = ec._Room_owner_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "donations":
-			out.Values[i] = ec._Room_donations(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "subscriber_only":
-			out.Values[i] = ec._Room_subscriber_only(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11188,26 +9961,6 @@ func (ec *executionContext) _Subscriber(ctx context.Context, sel ast.SelectionSe
 	}
 
 	return out
-}
-
-var subscriptionImplementors = []string{"Subscription"}
-
-func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
-	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
-		Object: "Subscription",
-	})
-	if len(fields) != 1 {
-		ec.Errorf(ctx, "must subscribe to exactly one stream")
-		return nil
-	}
-
-	switch fields[0].Name {
-	case "getMessages":
-		return ec._Subscription_getMessages(ctx, fields[0])
-	default:
-		panic("unknown field " + strconv.Quote(fields[0].Name))
-	}
 }
 
 var tokenImplementors = []string{"Token"}
@@ -11375,8 +10128,8 @@ func (ec *executionContext) _Waitlist(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "status":
-			out.Values[i] = ec._Waitlist_status(ctx, field, obj)
+		case "canEnter":
+			out.Values[i] = ec._Waitlist_canEnter(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -11934,64 +10687,6 @@ func (ec *executionContext) marshalNComponent2ᚖgithubᚗcomᚋprizmsolᚋprizm
 	return ec._Component(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNFollower2githubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐFollower(ctx context.Context, sel ast.SelectionSet, v model.Follower) graphql.Marshaler {
-	return ec._Follower(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNFollower2ᚕᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐFollowerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Follower) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNFollower2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐFollower(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNFollower2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐFollower(ctx context.Context, sel ast.SelectionSet, v *model.Follower) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Follower(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12021,13 +10716,13 @@ func (ec *executionContext) marshalNMembership2ᚖgithubᚗcomᚋprizmsolᚋpriz
 	return ec._Membership(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNNewFollower2githubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐNewFollower(ctx context.Context, v interface{}) (model.NewFollower, error) {
-	res, err := ec.unmarshalInputNewFollower(ctx, v)
+func (ec *executionContext) unmarshalNNewPage2githubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐNewPage(ctx context.Context, v interface{}) (model.NewPage, error) {
+	res, err := ec.unmarshalInputNewPage(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNNewPage2githubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐNewPage(ctx context.Context, v interface{}) (model.NewPage, error) {
-	res, err := ec.unmarshalInputNewPage(ctx, v)
+func (ec *executionContext) unmarshalNNewWaitlist2githubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐNewWaitlist(ctx context.Context, v interface{}) (model.NewWaitlist, error) {
+	res, err := ec.unmarshalInputNewWaitlist(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -12248,6 +10943,20 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋprizmsolᚋprizmsol�
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNWaitlist2githubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐWaitlist(ctx context.Context, sel ast.SelectionSet, v model.Waitlist) graphql.Marshaler {
+	return ec._Waitlist(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWaitlist2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐWaitlist(ctx context.Context, sel ast.SelectionSet, v *model.Waitlist) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Waitlist(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -12527,54 +11236,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
-}
-
-func (ec *executionContext) marshalOMessages2ᚕᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐMessages(ctx context.Context, sel ast.SelectionSet, v []*model.Messages) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOMessages2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐMessages(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	return ret
-}
-
-func (ec *executionContext) marshalOMessages2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐMessages(ctx context.Context, sel ast.SelectionSet, v *model.Messages) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Messages(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalONewApp2ᚖgithubᚗcomᚋprizmsolᚋprizmsolᚑserverᚋgraphᚋmodelᚐNewApp(ctx context.Context, v interface{}) (*model.NewApp, error) {

@@ -77,19 +77,24 @@ func (r *mutationResolver) UpdateMembership(ctx context.Context, id string, inpu
 	return db.UpdateMembership(id, input)
 }
 
-// Follow is the resolver for the follow field.
-func (r *mutationResolver) Follow(ctx context.Context, input model.NewFollower) (*model.Follower, error) {
-	return db.NewFollow(input)
+// AddToWaitlist is the resolver for the addToWaitlist field.
+func (r *mutationResolver) AddToWaitlist(ctx context.Context, input model.NewWaitlist) (*model.Waitlist, error) {
+	return db.AddUserToWaitlist(input)
+}
+
+// UpdateWaitlistEntry is the resolver for the updateWaitlistEntry field.
+func (r *mutationResolver) UpdateWaitlistEntry(ctx context.Context, email string, canEnter bool) (*model.Waitlist, error) {
+	return db.UpdateWaitlistEntry(email, canEnter)
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
-	panic(fmt.Errorf("not implemented: Users - users"))
+	return []*model.User{}, nil
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	return &model.User{}, nil
 }
 
 // GetUserByUsername is the resolver for the getUserByUsername field.
@@ -152,14 +157,9 @@ func (r *queryResolver) GetPage(ctx context.Context, id string) (*model.Page, er
 	return db.GetPage(id)
 }
 
-// GetFollowers is the resolver for the getFollowers field.
-func (r *queryResolver) GetFollowers(ctx context.Context, targetID *string) ([]*model.Follower, error) {
-	return db.GetFollowers(*targetID)
-}
-
-// GetMessages is the resolver for the getMessages field.
-func (r *subscriptionResolver) GetMessages(ctx context.Context, roomID string) (<-chan []*model.Messages, error) {
-	panic(fmt.Errorf("not implemented: GetMessages - getMessages"))
+// GetWaitlist is the resolver for the getWaitlist field.
+func (r *queryResolver) GetWaitlist(ctx context.Context, email string) (*model.Waitlist, error) {
+	panic(fmt.Errorf("not implemented: GetWaitlist - getWaitlist"))
 }
 
 // Mutation returns MutationResolver implementation.
@@ -168,12 +168,8 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-// Subscription returns SubscriptionResolver implementation.
-func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
-
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-type subscriptionResolver struct{ *Resolver }
 
 // !!! WARNING !!!
 // The code below was going to be deleted when updating resolvers. It has been copied here so you have

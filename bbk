@@ -2,22 +2,40 @@ package database
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/prizmsol/prizmsol-server/graph/model"
 	"github.com/prizmsol/prizmsol-server/utils"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
+	"golang.org/x/crypto/bcrypt"
 )
 
-type CustomClaim struct {
-	ID string
-	jwt.RegisteredClaims
+type SignedUser struct {
+	ID       string
+	Email    string
+	Username string
+}
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+func randToken() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
 }
 
 func (db *BUN) createStripeCustomer(user model.User) model.User {
@@ -59,15 +77,18 @@ func (db *BUN) InsertUsers(input *model.NewUser) *model.User {
 	var now = time.Now()
 	id := uuid.New()
 
+	hashed, _ := hashPassword(input.HashPassword)
+
 	data := model.User{
-		ID:        id.String(),
-		Name:      input.Name,
-		Email:     input.Email,
-		Username:  input.Username,
-		CreatedAt: &now,
+		ID:           id.String(),
+		Name:         input.Name,
+		Email:        input.Email,
+		HashPassword: hashed,
+		Username:     input.Username,
+		CreatedAt:    &now,
 	}
 
-	query := "INSERT INTO Users (id, name, email, username, created_at) VALUES ($1, $2, $3, $4, $5)"
+	query := "INSERT INTO Users (id, name, email, username, created_at) VALUES ($1, $2, $3, $4, $5, $6)"
 
 	stmt, err := db.client.Prepare(query)
 
@@ -78,7 +99,7 @@ func (db *BUN) InsertUsers(input *model.NewUser) *model.User {
 
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(data.ID, data.Name, data.Email, data.Username, data.CreatedAt); err != nil {
+	if _, err := stmt.Exec(data.ID, data.Name, data.Email, data.HashPassword, data.Username, data.CreatedAt); err != nil {
 		fmt.Print("Error Could not save users into the database: ", err)
 		return &model.User{}
 	}
@@ -178,77 +199,29 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 				"Your login code is: "+token,
 			)
 
-			return user.ID, nil
+			return token, nil
 		}
 	}
 
 	return "No user found", nil
 }
 
-func JwtGenerate(ctx context.Context, userID string) (string, error) {
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, CustomClaim{
-		ID: userID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(1, 0, 0)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	})
-
-	jwt_secret := []byte(os.Getenv("JWT_SECRET"))
-	tokenString, err := t.SignedString(jwt_secret)
-
-	if err != nil {
-		fmt.Println("Error signing token")
-		return "Error Signing token", err
-	}
-
-	return tokenString, nil
-}
-
-func JwtValidate(ctx context.Context, token string) (*jwt.Token, error) {
-	jwt_secret := []byte(os.Getenv("JWT_SECRET"))
-	return jwt.ParseWithClaims(token, &CustomClaim{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("There's a problem with the signing method: %v", token.Header["alg"])
-		}
-		return jwt_secret, nil
-	})
-}
-
-func (db *BUN) VerifyToken(id string, token string) (string, error) {
+func (db *BUN) VerifyToken(email string, token string) (string, error) {
 	var user model.User
 	var tokenModel model.Token
 
-	count, err := db.client.NewSelect().Model(&tokenModel).Where("token = ?", token).Where("user_id = ?", id).ScanAndCount(context.Background())
+	res, err := db.client.NewSelect().Model(&tokenModel).Where("token = ?", token).Where("email = ?", email).Exec(context.Background())
 
 	if err != nil {
 		fmt.Println("Could not fetch token: ", err)
-		return "No Token", err
+		return "", err
 	}
 
-	if count > 0 {
-		count, err := db.client.NewSelect().Model(&user).Where("id = ?", id).ScanAndCount(context.Background())
+	rows, _ := res.RowsAffected()
 
-		if err != nil {
-			fmt.Println("Could not fetch user: ", err)
-			return "No User", err
-		}
-
-		if count > 0 {
-			jwtString, err := JwtGenerate(context.Background(), user.ID)
-
-			if err == nil {
-				// delete token
-				db.client.NewDelete().Model(&tokenModel).Where("token = ?", token).Scan(context.Background())
-			}
-
-			return jwtString, nil
-		}
-	} else {
-		return "No Token found", nil
+	if rows > 0 {
+		// fetch user and compile JWT.
 	}
-
-	return "Failed", nil
 }
 
 func (db *BUN) VerifyEmail(id string, email string) (bool, error) {
@@ -286,62 +259,4 @@ func (db *BUN) SearchUsers(query string) ([]*model.User, error) {
 	}
 
 	return users, nil
-}
-
-func (db *BUN) AddUserToWaitlist(input model.NewWaitlist) (*model.Waitlist, error) {
-	var waitlist model.Waitlist
-	var now = time.Now()
-	id := uuid.New()
-
-	data := model.Waitlist{
-		ID:        id.String(),
-		Email:     input.Email,
-		CanEnter:  false,
-		CreatedAt: &now,
-	}
-
-	row, err := db.client.NewInsert().Model(&data).Exec(context.Background())
-
-	if err != nil {
-		fmt.Println("Could not insert user into waitlist: ", err)
-		return nil, err
-	}
-
-	rows, err := row.RowsAffected()
-
-	if err != nil {
-		fmt.Println("Could not fetch rows affected: ", err)
-		return nil, err
-	}
-
-	if rows > 0 {
-		return &data, nil
-	}
-
-	return &waitlist, nil
-}
-
-func (db *BUN) UpdateWaitlistEntry(email string, canEnter bool) (*model.Waitlist, error) {
-	var waitlist model.Waitlist
-
-	row, err := db.client.NewUpdate().Model(&waitlist).Set("can_enter = ?", canEnter).Where("email = ?", email).Returning("*").Exec(context.Background())
-
-	if err != nil {
-		fmt.Println("Could not update waitlist entry: ", err)
-		return nil, err
-	}
-
-	rows, err := row.RowsAffected()
-
-	if err != nil {
-		fmt.Println("Could not fetch rows affected: ", err)
-		return nil, err
-	}
-
-	if rows > 0 {
-		fmt.Println("Successfully updated waitlist entry")
-		return &waitlist, nil
-	}
-
-	return &waitlist, nil
 }
