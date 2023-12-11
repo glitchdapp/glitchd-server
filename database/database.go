@@ -18,37 +18,12 @@ type BUN struct {
 	client *bun.DB
 }
 
-type Config struct {
-	host     string
-	port     int
-	user     string
-	password string
-	dbname   string
-	sslmode  string
-}
-
-func getConfig() *Config {
+func Connect() *BUN {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
-	return &Config{
-		host:     os.Getenv("DB_HOST"),
-		port:     5432,
-		user:     os.Getenv("DB_USER"),
-		password: os.Getenv("DB_PASS"),
-		dbname:   os.Getenv("DB_NAME"),
-		sslmode:  os.Getenv("DB_SSLMODE"),
-	}
-}
-
-func Connect() *BUN {
-	config := getConfig()
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=%s",
-		config.host, config.port, config.user, config.password, config.dbname, config.sslmode)
-	client, err := sql.Open("postgres", psqlInfo)
+	client, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		panic(err)
 	}
