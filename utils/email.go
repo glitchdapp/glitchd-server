@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	Sender  = "PrizmSol <no-reply@theprizmsol.com>"
+	Sender  = "Glitchd <no-reply@glitchd.io>"
 	CharSet = "UTF-8"
 )
 

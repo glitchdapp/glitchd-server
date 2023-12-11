@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"github.com/prizmsol/prizmsol-server/graph/model"
-	"github.com/prizmsol/prizmsol-server/utils"
+	"github.com/glitchd/glitchd-server/graph/model"
+	"github.com/glitchd/glitchd-server/utils"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
 	"golang.org/x/crypto/bcrypt"
@@ -194,7 +194,7 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 			// send email.
 			utils.SendMail(
 				user.Email,
-				"PrizmSol Login Verification",
+				"glitchd Login Verification",
 				"<h3>Your Login code is: </h3><br /><h1>"+token+"</h1>",
 				"Your login code is: "+token,
 			)

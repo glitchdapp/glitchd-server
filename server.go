@@ -8,11 +8,11 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/glitchd/glitchd-server/directives"
+	"github.com/glitchd/glitchd-server/graph"
+	"github.com/glitchd/glitchd-server/middlewares"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"github.com/prizmsol/prizmsol-server/directives"
-	"github.com/prizmsol/prizmsol-server/graph"
-	"github.com/prizmsol/prizmsol-server/middlewares"
 )
 
 const defaultPort = "8080"

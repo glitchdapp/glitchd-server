@@ -6,17 +6,18 @@ import (
 	"os"
 	"time"
 
+	"github.com/glitchd/glitchd-server/graph/model"
+	"github.com/glitchd/glitchd-server/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"github.com/prizmsol/prizmsol-server/graph/model"
-	"github.com/prizmsol/prizmsol-server/utils"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
 )
 
 type CustomClaim struct {
-	ID string
+	ID    string
+	Email string
 	jwt.RegisteredClaims
 }
 
@@ -173,7 +174,7 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 			// send email.
 			utils.SendMail(
 				user.Email,
-				"PrizmSol Login Verification",
+				"glitchd Login Verification",
 				"<h3>Your Login code is: </h3><br /><h1>"+token+"</h1>",
 				"Your login code is: "+token,
 			)
@@ -185,9 +186,10 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 	return "No user found", nil
 }
 
-func JwtGenerate(ctx context.Context, userID string) (string, error) {
+func JwtGenerate(ctx context.Context, userID string, email string) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, CustomClaim{
-		ID: userID,
+		ID:    userID,
+		Email: email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(1, 0, 0)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -235,7 +237,7 @@ func (db *BUN) VerifyToken(id string, token string) (string, error) {
 		}
 
 		if count > 0 {
-			jwtString, err := JwtGenerate(context.Background(), user.ID)
+			jwtString, err := JwtGenerate(context.Background(), user.ID, user.Email)
 
 			if err == nil {
 				// delete token
@@ -288,10 +290,39 @@ func (db *BUN) SearchUsers(query string) ([]*model.User, error) {
 	return users, nil
 }
 
+func (db *BUN) IsWaitlisted(email string) (bool, error) {
+	var waitlist model.Waitlist
+
+	res, err := db.client.NewSelect().Model(&waitlist).Where("email = ?", email).Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not fetch waitlist entry: ", err)
+		return false, err
+	}
+
+	rows, err := res.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Could not fetch rows affected: ", err)
+		return false, err
+	}
+
+	if rows > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (db *BUN) AddUserToWaitlist(input model.NewWaitlist) (*model.Waitlist, error) {
 	var waitlist model.Waitlist
 	var now = time.Now()
 	id := uuid.New()
+
+	if ok, err := db.IsWaitlisted(input.Email); ok {
+		fmt.Println("User already waitlisted")
+		return nil, err
+	}
 
 	data := model.Waitlist{
 		ID:        id.String(),

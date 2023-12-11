@@ -7,16 +7,12 @@ import (
 	"log"
 	"os"
 
+	"github.com/glitchd/glitchd-server/graph/model"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"github.com/prizmsol/prizmsol-server/graph/model"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 )
-
-type DB struct {
-	client *sql.DB
-}
 
 type BUN struct {
 	client *bun.DB
@@ -75,11 +71,11 @@ func (db *BUN) createUserTable() {
 	}
 }
 
-func (db *BUN) createAppTable() {
-	_, err := db.client.NewCreateTable().Model(&model.App{}).Table("apps").IfNotExists().Exec(context.Background())
+func (db *BUN) createPostTable() {
+	_, err := db.client.NewCreateTable().Model(&model.Post{}).Table("posts").IfNotExists().Exec(context.Background())
 
 	if err != nil {
-		fmt.Println("Could not create apps table ", err)
+		fmt.Println("Could not create posts table ", err)
 	}
 }
 
@@ -127,9 +123,9 @@ func (db *BUN) InitTables() *BUN {
 	// generate tables in db
 	db.createUserTable()
 	db.createTokenTable()
-	db.createAppTable()
+	db.createUserTable()
 	db.createMembershipTable()
-	db.createPagesTable()
+	db.createPostTable()
 	db.createComponentsTable()
 	db.createWaitlistTable()
 

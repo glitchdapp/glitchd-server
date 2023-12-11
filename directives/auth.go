@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/prizmsol/prizmsol-server/middlewares"
+	"github.com/glitchd/glitchd-server/middlewares"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 

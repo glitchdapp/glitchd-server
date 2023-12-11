@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/glitchd/glitchd-server/graph/model"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"github.com/prizmsol/prizmsol-server/graph/model"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/checkout/session"
 )

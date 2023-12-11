@@ -1,4 +1,7 @@
-directive @goField(forceResolver: Boolean, name: String) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+directive @goField(
+  forceResolver: Boolean
+  name: String
+) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 directive @auth on FIELD_DEFINITION
 
@@ -48,6 +51,41 @@ type Waitlist {
 
 input NewWaitlist {
   email: String!
+}
+
+type Post {
+  id: UUID!
+  user_id: String!
+  title: String!
+  caption: String!
+  isPremium: Boolean!
+  isVisible: Boolean!
+  thumbnail: String!
+  type: String!
+  media: String!
+  created_at: Time!
+  updated_at: Time!
+}
+
+input NewPost {
+  user_id: String!
+  title: String!
+  caption: String!
+  isPremium: Boolean!
+  isVisible: Boolean!
+  thumbnail: String!
+  type: String!
+  media: String!
+}
+
+input UpdatePost {
+  title: String!
+  caption: String!
+  isPremium: Boolean!
+  isVisible: Boolean!
+  thumbnail: String!
+  type: String!
+  media: String!
 }
 
 type App {
@@ -150,10 +188,10 @@ input NewMembership {
 }
 
 input UpdateMembership {
-    status: String!
-    tier: String!
-    stripe_subscription_id: String!
-    stripe_checkout_session: String!
+  status: String!
+  tier: String!
+  stripe_subscription_id: String!
+  stripe_checkout_session: String!
 }
 
 type Subscriber {
@@ -171,47 +209,39 @@ input NewSubscriber {
   user_id: String!
   tier: String!
   stripe_subscription_id: String!
-  stripe_checkout_session: String! 
+  stripe_checkout_session: String!
 }
 
 type Mutation {
-  createUser(input: NewUser) : User
+  createUser(input: NewUser): User
   updateUser(id: String!, input: NewUser): User!
   deleteUser(id: String!): User!
 
   login(email: String!): String!
-  verifyToken(id: String!, token: String!) : String!
-  verifyEmail(id: String!, email: String!) : Boolean!
+  verifyToken(id: String!, token: String!): String!
+  verifyEmail(id: String!, email: String!): Boolean!
 
-  createApp(input: NewApp) : App!
-  updateApp(id: String!, input: UpdateApp!) : Boolean!
-  deleteApp(id: String!) : App!
+  createPost(input: NewPost!): Post!
+  updatePost(id: String!, input: UpdatePost!): Post!
+  deletePost(id: String!): Post!
 
-  createPage(input: NewPage!) : Page!
-  updatePage(id: String!, input: UpdatePage!) : Boolean!
-  deletePage(id: String!) : Boolean!
+  updateMembership(id: String!, input: UpdateMembership!): Boolean!
 
-  updateMembership(id: String!, input: UpdateMembership!) : Boolean!
-
-  addToWaitlist(input: NewWaitlist!) : Waitlist!
-  updateWaitlistEntry(email: String!, canEnter: Boolean!) : Waitlist!
+  addToWaitlist(input: NewWaitlist!): Waitlist!
+  updateWaitlistEntry(email: String!, canEnter: Boolean!): Waitlist!
 }
 
 type Query {
   users: [User!]! @auth
   user(id: ID!): User! @auth
   getUserByUsername(username: String!): User!
-  getUserByEmail(email: String!): User! @auth
-  searchUsers(query: String!) : [User!]!
-  getMembership(app_id: String!) : Membership!
+  getUserByEmail(email: String!): User!
+  searchUsers(query: String!): [User!]! @auth
+  getMembership(app_id: String!): Membership!
   getMembershipBySession(session_id: String!): Membership!
-  getApps(user_id: String!) : [App!]!
-  getApp(id: String!) : App!
-  getAppByVanity(vanity: String!) : App!
-  getUserApp(user_id: String!, vanity: String!) : App!
-  getUserApps(user_id: String!) : [App!]!
-  getPages(app_id: String!) : [Page!]!
-  getPage(id: String!) : Page!
 
-  getWaitlist(email: String!) : Waitlist!
+  getPostByUserPaginated(user_id: String!, page: Int!, limit: Int!): [Post!]!
+  getPostById(id: String!): Post!
+
+  getWaitlist(email: String!): Boolean! @auth
 }

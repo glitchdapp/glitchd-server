@@ -73,6 +73,17 @@ type NewPage struct {
 	Type        string `json:"type"`
 }
 
+type NewPost struct {
+	UserID    string `json:"user_id"`
+	Title     string `json:"title"`
+	Caption   string `json:"caption"`
+	IsPremium bool   `json:"isPremium"`
+	IsVisible bool   `json:"isVisible"`
+	Thumbnail string `json:"thumbnail"`
+	Type      string `json:"type"`
+	Media     string `json:"media"`
+}
+
 type NewSubscriber struct {
 	AppID                 string `json:"app_id"`
 	UserID                string `json:"user_id"`
@@ -98,6 +109,20 @@ type Page struct {
 	Description string       `json:"description"`
 	Type        string       `json:"type"`
 	Components  []*Component `json:"components"`
+}
+
+type Post struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	Title     string    `json:"title"`
+	Caption   string    `json:"caption"`
+	IsPremium bool      `json:"isPremium"`
+	IsVisible bool      `json:"isVisible"`
+	Thumbnail string    `json:"thumbnail"`
+	Type      string    `json:"type"`
+	Media     string    `json:"media"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Subscriber struct {
@@ -145,6 +170,16 @@ type UpdatePage struct {
 	Description string   `json:"description"`
 	Type        string   `json:"type"`
 	Components  []string `json:"components"`
+}
+
+type UpdatePost struct {
+	Title     string `json:"title"`
+	Caption   string `json:"caption"`
+	IsPremium bool   `json:"isPremium"`
+	IsVisible bool   `json:"isVisible"`
+	Thumbnail string `json:"thumbnail"`
+	Type      string `json:"type"`
+	Media     string `json:"media"`
 }
 
 type User struct {

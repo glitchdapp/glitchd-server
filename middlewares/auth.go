@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/prizmsol/prizmsol-server/database"
+	"github.com/glitchd/glitchd-server/database"
 )
 
 type authString string

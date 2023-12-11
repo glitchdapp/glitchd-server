@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/glitchd/glitchd-server/graph/model"
 	"github.com/google/uuid"
-	"github.com/prizmsol/prizmsol-server/graph/model"
 )
 
 func (db *BUN) UpdateMembership(id string, input model.UpdateMembership) (bool, error) {
