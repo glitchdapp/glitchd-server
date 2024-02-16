@@ -124,52 +124,6 @@ input UpdateApp {
   tier: String
 }
 
-type Page {
-  id: UUID!
-  app_id: String!
-  title: String!
-  description: String!
-  type: String!
-  components: [Component!]!
-}
-
-input NewPage {
-  app_id: String!
-  title: String!
-  description: String!
-  type: String!
-}
-
-input UpdatePage {
-  id: UUID!
-  app_id: String!
-  title: String!
-  description: String!
-  type: String!
-  components: [String!]!
-}
-
-type Attribute {
-  key: String!
-  value: [String]!
-}
-
-input AttributeInput {
-  key: String!
-  value: [String]!
-}
-
-type Component {
-  id: UUID!
-  type: String!
-  attributes: [Attribute!]!
-}
-
-input NewComponent {
-  type: String!
-  attributes: [AttributeInput!]!
-}
-
 type Membership {
   id: UUID!
   app_id: String!
@@ -234,8 +188,9 @@ type Mutation {
 type Query {
   users: [User!]! @auth
   user(id: ID!): User! @auth
-  getUserByUsername(username: String!): User!
-  getUserByEmail(email: String!): User!
+  getUserByUsername(username: String!): User! @auth
+  getUserByEmail(email: String!): User! @auth
+  getUserById(id: String!): User! @auth
   searchUsers(query: String!): [User!]! @auth
   getMembership(app_id: String!): Membership!
   getMembershipBySession(session_id: String!): Membership!

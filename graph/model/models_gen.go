@@ -20,22 +20,6 @@ type App struct {
 	Tier        *string `json:"tier,omitempty"`
 }
 
-type Attribute struct {
-	Key   string    `json:"key"`
-	Value []*string `json:"value"`
-}
-
-type AttributeInput struct {
-	Key   string    `json:"key"`
-	Value []*string `json:"value"`
-}
-
-type Component struct {
-	ID         string       `json:"id"`
-	Type       string       `json:"type"`
-	Attributes []*Attribute `json:"attributes"`
-}
-
 type Membership struct {
 	ID                    string `json:"id"`
 	AppID                 string `json:"app_id"`
@@ -53,24 +37,12 @@ type NewApp struct {
 	Tier        string `json:"tier"`
 }
 
-type NewComponent struct {
-	Type       string            `json:"type"`
-	Attributes []*AttributeInput `json:"attributes"`
-}
-
 type NewMembership struct {
 	AppID                 string `json:"app_id"`
 	UserID                string `json:"user_id"`
 	Tier                  string `json:"tier"`
 	StripeSubscriptionID  string `json:"stripe_subscription_id"`
 	StripeCheckoutSession string `json:"stripe_checkout_session"`
-}
-
-type NewPage struct {
-	AppID       string `json:"app_id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
 }
 
 type NewPost struct {
@@ -100,15 +72,6 @@ type NewUser struct {
 
 type NewWaitlist struct {
 	Email string `json:"email"`
-}
-
-type Page struct {
-	ID          string       `json:"id"`
-	AppID       string       `json:"app_id"`
-	Title       string       `json:"title"`
-	Description string       `json:"description"`
-	Type        string       `json:"type"`
-	Components  []*Component `json:"components"`
 }
 
 type Post struct {
@@ -161,15 +124,6 @@ type UpdateMembership struct {
 	Tier                  string `json:"tier"`
 	StripeSubscriptionID  string `json:"stripe_subscription_id"`
 	StripeCheckoutSession string `json:"stripe_checkout_session"`
-}
-
-type UpdatePage struct {
-	ID          string   `json:"id"`
-	AppID       string   `json:"app_id"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Type        string   `json:"type"`
-	Components  []string `json:"components"`
 }
 
 type UpdatePost struct {

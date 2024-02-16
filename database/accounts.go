@@ -125,6 +125,18 @@ func (db *BUN) GetAccountByEmail(email string) (*model.User, error) {
 	return &result, nil
 }
 
+func (db *BUN) GetAccountByID(id string) (*model.User, error) {
+	var result model.User
+	row := db.client.NewSelect().Model(&result).Where("id = ?", id).Scan(context.Background())
+
+	if row != nil {
+		fmt.Print("\n Error found when selecting users by id: ", row)
+		return &model.User{}, row
+	}
+
+	return &result, nil
+}
+
 func (db *BUN) LoginAccount(email string) (string, error) {
 
 	// load env

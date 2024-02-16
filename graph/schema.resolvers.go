@@ -92,6 +92,11 @@ func (r *queryResolver) GetUserByEmail(ctx context.Context, email string) (*mode
 	return db.GetAccountByEmail(email)
 }
 
+// GetUserByID is the resolver for the getUserById field.
+func (r *queryResolver) GetUserByID(ctx context.Context, id string) (*model.User, error) {
+	return db.GetAccountByID(id)
+}
+
 // SearchUsers is the resolver for the searchUsers field.
 func (r *queryResolver) SearchUsers(ctx context.Context, query string) ([]*model.User, error) {
 	return db.SearchUsers(query)
@@ -137,44 +142,4 @@ type queryResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *queryResolver) GetApps(ctx context.Context, userID string) ([]*model.App, error) {
-	return db.GetApps(userID)
-}
-func (r *queryResolver) GetApp(ctx context.Context, id string) (*model.App, error) {
-	return db.GetApp(id)
-}
-func (r *queryResolver) GetAppByVanity(ctx context.Context, vanity string) (*model.App, error) {
-	return db.GetAppByVanity(vanity)
-}
-func (r *queryResolver) GetUserApp(ctx context.Context, userID string, vanity string) (*model.App, error) {
-	return db.GetUserApp(userID, vanity)
-}
-func (r *queryResolver) GetUserApps(ctx context.Context, userID string) ([]*model.App, error) {
-	return db.GetUserApps(userID)
-}
-func (r *queryResolver) GetPages(ctx context.Context, appID string) ([]*model.Page, error) {
-	return db.GetPages(appID)
-}
-func (r *queryResolver) GetPage(ctx context.Context, id string) (*model.Page, error) {
-	return db.GetPage(id)
-}
-func (r *mutationResolver) CreateApp(ctx context.Context, input *model.NewApp) (*model.App, error) {
-	return db.NewApp(input)
-}
-func (r *mutationResolver) UpdateApp(ctx context.Context, id string, input model.UpdateApp) (bool, error) {
-	return db.UpdateApp(id, input)
-}
-func (r *mutationResolver) DeleteApp(ctx context.Context, id string) (*model.App, error) {
-	return db.DeleteApp(id)
-}
-func (r *mutationResolver) CreatePage(ctx context.Context, input model.NewPage) (*model.Page, error) {
-	return db.CreatePage(input)
-}
-func (r *mutationResolver) UpdatePage(ctx context.Context, id string, input model.UpdatePage) (bool, error) {
-	return db.UpdatePage(id, input)
-}
-func (r *mutationResolver) DeletePage(ctx context.Context, id string) (bool, error) {
-	return db.DeletePage(id)
-}
-
 var db = database.Connect().InitTables()

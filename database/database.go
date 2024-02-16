@@ -70,22 +70,6 @@ func (db *BUN) createTokenTable() {
 	}
 }
 
-func (db *BUN) createPagesTable() {
-	_, err := db.client.NewCreateTable().Model(&model.Page{}).Table("pages").IfNotExists().Exec(context.Background())
-
-	if err != nil {
-		fmt.Println("Could not create pages table ", err)
-	}
-}
-
-func (db *BUN) createComponentsTable() {
-	_, err := db.client.NewCreateTable().Model(&model.Component{}).Table("components").IfNotExists().Exec(context.Background())
-
-	if err != nil {
-		fmt.Println("Could not create components table ", err)
-	}
-}
-
 func (db *BUN) createWaitlistTable() {
 	_, err := db.client.NewCreateTable().Model(&model.Waitlist{}).Table("waitlist").IfNotExists().Exec(context.Background())
 
@@ -101,7 +85,6 @@ func (db *BUN) InitTables() *BUN {
 	db.createUserTable()
 	db.createMembershipTable()
 	db.createPostTable()
-	db.createComponentsTable()
 	db.createWaitlistTable()
 
 	fmt.Println("Initialized Tables")
