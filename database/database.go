@@ -24,6 +24,7 @@ func Connect() *BUN {
 		log.Fatal("Error loading .env file")
 	}
 	client, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	fmt.Println("DATABASE_URL: ", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		panic(err)
 	}
