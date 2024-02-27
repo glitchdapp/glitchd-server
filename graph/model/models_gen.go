@@ -6,43 +6,7 @@ import (
 	"time"
 )
 
-type App struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
-	Vanity      string  `json:"vanity"`
-	SocialImage *string `json:"socialImage,omitempty"`
-	Favicon     *string `json:"favicon,omitempty"`
-	Logo        *string `json:"logo,omitempty"`
-	OwnerID     string  `json:"owner_id"`
-	WebType     *string `json:"web_type,omitempty"`
-	Theme       *string `json:"theme,omitempty"`
-	Tier        *string `json:"tier,omitempty"`
-}
-
-type Membership struct {
-	ID                    string `json:"id"`
-	AppID                 string `json:"app_id"`
-	Tier                  string `json:"tier"`
-	Status                string `json:"status"`
-	StripeSubscriptionID  string `json:"stripe_subscription_id"`
-	StripeCheckoutSession string `json:"stripe_checkout_session"`
-}
-
-type NewApp struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Vanity      string `json:"vanity"`
-	OwnerID     string `json:"owner_id"`
-	Tier        string `json:"tier"`
-}
-
-type NewMembership struct {
-	AppID                 string `json:"app_id"`
-	UserID                string `json:"user_id"`
-	Tier                  string `json:"tier"`
-	StripeSubscriptionID  string `json:"stripe_subscription_id"`
-	StripeCheckoutSession string `json:"stripe_checkout_session"`
+type Mutation struct {
 }
 
 type NewPost struct {
@@ -56,18 +20,10 @@ type NewPost struct {
 	Media     string `json:"media"`
 }
 
-type NewSubscriber struct {
-	AppID                 string `json:"app_id"`
-	UserID                string `json:"user_id"`
-	Tier                  string `json:"tier"`
-	StripeSubscriptionID  string `json:"stripe_subscription_id"`
-	StripeCheckoutSession string `json:"stripe_checkout_session"`
-}
-
 type NewUser struct {
 	Name     string `json:"name"`
-	Username string `json:"username"`
 	Email    string `json:"email"`
+	Username string `json:"username"`
 }
 
 type NewWaitlist struct {
@@ -88,14 +44,7 @@ type Post struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type Subscriber struct {
-	ID                    string `json:"id"`
-	App                   *App   `json:"app"`
-	User                  *User  `json:"user"`
-	Tier                  string `json:"tier"`
-	Status                string `json:"status"`
-	StripeSubscriptionID  string `json:"stripe_subscription_id"`
-	StripeCheckoutSession string `json:"stripe_checkout_session"`
+type Query struct {
 }
 
 type Token struct {
@@ -103,27 +52,6 @@ type Token struct {
 	UserID    string     `json:"user_id"`
 	Token     string     `json:"token"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
-}
-
-type UpdateApp struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
-	Vanity      string  `json:"vanity"`
-	SocialImage *string `json:"socialImage,omitempty"`
-	Favicon     *string `json:"favicon,omitempty"`
-	Logo        *string `json:"logo,omitempty"`
-	OwnerID     string  `json:"owner_id"`
-	WebType     *string `json:"web_type,omitempty"`
-	Theme       *string `json:"theme,omitempty"`
-	Tier        *string `json:"tier,omitempty"`
-}
-
-type UpdateMembership struct {
-	Status                string `json:"status"`
-	Tier                  string `json:"tier"`
-	StripeSubscriptionID  string `json:"stripe_subscription_id"`
-	StripeCheckoutSession string `json:"stripe_checkout_session"`
 }
 
 type UpdatePost struct {
@@ -136,22 +64,25 @@ type UpdatePost struct {
 	Media     string `json:"media"`
 }
 
+type UpdateUser struct {
+	Name             string     `json:"name"`
+	Username         string     `json:"username"`
+	Email            string     `json:"email"`
+	Photo            *string    `json:"photo,omitempty"`
+	StripeCustomerID string     `json:"stripe_customer_id"`
+	IsActive         string     `json:"is_active"`
+	UpdatedAt        *time.Time `json:"updated_at,omitempty"`
+}
+
 type User struct {
 	ID               string     `json:"id"`
 	Email            string     `json:"email"`
 	Username         string     `json:"username"`
 	Name             string     `json:"name"`
 	Photo            *string    `json:"photo,omitempty"`
-	Phone            *string    `json:"phone,omitempty"`
-	Biography        *string    `json:"biography,omitempty"`
-	Links            []*string  `json:"links,omitempty"`
 	StripeCustomerID string     `json:"stripe_customer_id"`
-	IsVerified       bool       `json:"is_verified"`
-	IsDeactivated    bool       `json:"is_deactivated"`
-	IsEmailVerified  bool       `json:"is_email_verified"`
-	IsPrivate        bool       `json:"is_private"`
+	IsActive         string     `json:"is_active"`
 	CreatedAt        *time.Time `json:"created_at,omitempty"`
-	LastLogin        *time.Time `json:"last_login,omitempty"`
 	UpdatedAt        *time.Time `json:"updated_at,omitempty"`
 }
 

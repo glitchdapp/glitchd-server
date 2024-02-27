@@ -11,192 +11,114 @@ scalar JSON
 scalar Any
 
 type User {
-  id: UUID!
-  email: String!
-  username: String!
-  name: String!
-  photo: String
-  phone: String
-  biography: String
-  links: [String]
-  stripe_customer_id: String!
-  is_verified: Boolean!
-  is_deactivated: Boolean!
-  is_email_verified: Boolean!
-  is_private: Boolean!
-  created_at: Time
-  last_login: Time
-  updated_at: Time
+    id: UUID!
+    email: String!
+    username: String!
+    name: String!
+    photo: String
+    stripe_customer_id: String!
+    is_active: String!
+    created_at: Time
+    updated_at: Time
 }
 
 input NewUser {
-  name: String!
-  username: String!
-  email: String!
+    name: String!
+    email: String!
+    username: String!
+}
+
+input UpdateUser {
+    name: String!
+    username: String!
+    email: String!
+    photo: String
+    stripe_customer_id: String!
+    is_active: String!
+    updated_at: Time
 }
 
 type Token {
-  id: UUID!
-  user_id: String!
-  token: String!
-  created_at: Time
+    id: UUID!
+    user_id: String!
+    token: String!
+    created_at: Time
 }
 
 type Waitlist {
-  id: UUID!
-  email: String!
-  canEnter: Boolean!
-  created_at: Time
+    id: UUID!
+    email: String!
+    canEnter: Boolean!
+    created_at: Time
 }
 
 input NewWaitlist {
-  email: String!
+    email: String!
 }
 
 type Post {
-  id: UUID!
-  user_id: String!
-  title: String!
-  caption: String!
-  isPremium: Boolean!
-  isVisible: Boolean!
-  thumbnail: String!
-  type: String!
-  media: String!
-  created_at: Time!
-  updated_at: Time!
+    id: UUID!
+    user_id: String!
+    title: String!
+    caption: String!
+    isPremium: Boolean!
+    isVisible: Boolean!
+    thumbnail: String!
+    type: String!
+    media: String!
+    created_at: Time!
+    updated_at: Time!
 }
 
 input NewPost {
-  user_id: String!
-  title: String!
-  caption: String!
-  isPremium: Boolean!
-  isVisible: Boolean!
-  thumbnail: String!
-  type: String!
-  media: String!
+    user_id: String!
+    title: String!
+    caption: String!
+    isPremium: Boolean!
+    isVisible: Boolean!
+    thumbnail: String!
+    type: String!
+    media: String!
 }
 
 input UpdatePost {
-  title: String!
-  caption: String!
-  isPremium: Boolean!
-  isVisible: Boolean!
-  thumbnail: String!
-  type: String!
-  media: String!
-}
-
-type App {
-  id: UUID!
-  name: String!
-  description: String
-  vanity: String!
-  socialImage: String
-  favicon: String
-  logo: String
-  owner_id: String!
-  web_type: String
-  theme: String
-  tier: String
-}
-
-input NewApp {
-  name: String!
-  description: String!
-  vanity: String!
-  owner_id: String!
-  tier: String!
-}
-
-input UpdateApp {
-  id: UUID!
-  name: String!
-  description: String
-  vanity: String!
-  socialImage: String
-  favicon: String
-  logo: String
-  owner_id: String!
-  web_type: String
-  theme: String
-  tier: String
-}
-
-type Membership {
-  id: UUID!
-  app_id: String!
-  tier: String!
-  status: String!
-  stripe_subscription_id: String!
-  stripe_checkout_session: String!
-}
-
-input NewMembership {
-  app_id: String!
-  user_id: String!
-  tier: String!
-  stripe_subscription_id: String!
-  stripe_checkout_session: String!
-}
-
-input UpdateMembership {
-  status: String!
-  tier: String!
-  stripe_subscription_id: String!
-  stripe_checkout_session: String!
-}
-
-type Subscriber {
-  id: UUID!
-  app: App!
-  user: User!
-  tier: String!
-  status: String!
-  stripe_subscription_id: String!
-  stripe_checkout_session: String!
-}
-
-input NewSubscriber {
-  app_id: String!
-  user_id: String!
-  tier: String!
-  stripe_subscription_id: String!
-  stripe_checkout_session: String!
+    title: String!
+    caption: String!
+    isPremium: Boolean!
+    isVisible: Boolean!
+    thumbnail: String!
+    type: String!
+    media: String!
 }
 
 type Mutation {
-  createUser(input: NewUser): User
-  updateUser(id: String!, input: NewUser): User!
-  deleteUser(id: String!): User!
+    createUser(input: NewUser!): User!
+    updateUser(id: String!, input: UpdateUser): User!
+    deleteUser(id: String!): User!
 
-  login(email: String!): String!
-  verifyToken(id: String!, token: String!): String!
-  verifyEmail(id: String!, email: String!): Boolean!
+    login(email: String!): String!
+    verifyToken(id: String!, token: String!): String!
+    verifyEmail(id: String!, email: String!): Boolean!
 
-  createPost(input: NewPost!): Post!
-  updatePost(id: String!, input: UpdatePost!): Post!
-  deletePost(id: String!): Post!
+    createPost(input: NewPost!): Post!
+    updatePost(id: String!, input: UpdatePost!): Post!
+    deletePost(id: String!): Post!
 
-  updateMembership(id: String!, input: UpdateMembership!): Boolean!
-
-  addToWaitlist(input: NewWaitlist!): Waitlist!
-  updateWaitlistEntry(email: String!, canEnter: Boolean!): Waitlist!
+    addToWaitlist(input: NewWaitlist!): Waitlist!
+    updateWaitlistEntry(email: String!, canEnter: Boolean!): Waitlist!
 }
 
 type Query {
-  users: [User!]! @auth
-  user(id: ID!): User! @auth
-  getUserByUsername(username: String!): User! @auth
-  getUserByEmail(email: String!): User! @auth
-  getUserById(id: String!): User! @auth
-  searchUsers(query: String!): [User!]! @auth
-  getMembership(app_id: String!): Membership!
-  getMembershipBySession(session_id: String!): Membership!
+    users: [User!]! @auth
+    user(id: ID!): User! @auth
 
-  getPostByUserPaginated(user_id: String!, page: Int!, limit: Int!): [Post!]!
-  getPostById(id: String!): Post!
+    getUserByUsername(username: String!): User! @auth
+    getUserByEmail(email: String!): User! @auth
+    getUserById(id: String!): User! @auth
+    searchUsers(query: String!): [User!]! @auth
 
-  getWaitlist(email: String!): Boolean! @auth
+    getPostByUserPaginated(user_id: String!, page: Int!, limit: Int!): [Post!]!
+    getPostById(id: String!): Post!
+
+    getWaitlist(email: String!): Boolean! @auth
 }

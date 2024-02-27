@@ -50,15 +50,80 @@ func (db *BUN) createStripeCustomer(user model.User) model.User {
 	}
 
 	if rows > 0 {
-		fmt.Print("Successfully created stripe customer id")
+		fmt.Println("Successfully created stripe customer id")
 	}
 
 	return user
 }
 
-func (db *BUN) InsertUsers(input *model.NewUser) *model.User {
+func (db *BUN) generateToken(user model.User) (model.User, error) {
+	var now = time.Now()
+	// create token and return.
+	token := utils.EncodeToString(6)
+
+	data := model.Token{
+		UserID:    user.ID,
+		Token:     token,
+		CreatedAt: &now,
+	}
+
+	row, err := db.client.NewInsert().Model(&data).Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not insert token into db")
+		return model.User{}, nil
+	}
+
+	rows, _ := row.RowsAffected()
+
+	if rows > 0 {
+
+		// send email.
+		utils.SendMail(
+			user.Email,
+			"Glitchd Login Verification",
+			"<h2>Your login code is: </h2><br /><h1>"+token+"</h1>",
+			"Your login code is: "+token,
+		)
+
+		return user, nil
+	}
+
+	return model.User{}, nil
+}
+
+func (db *BUN) checkEmailExists(email string) (bool, error) {
+	var user model.User
+	count, err := db.client.NewSelect().Model(&user).Where("email = ?", email).ScanAndCount(context.Background())
+
+	if err != nil {
+		fmt.Println("Something went wrong. Could not check if email exists.", err)
+		return false, err
+	}
+
+	if count > 0 {
+		fmt.Println("Email exists go on :).")
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (db *BUN) CreateUser(input model.NewUser) (*model.User, error) {
 	var now = time.Now()
 	id := uuid.New()
+
+	emailExists, err := db.checkEmailExists(input.Email)
+
+	if err != nil {
+		fmt.Println("Something went wrong when checking for email.")
+		return nil, nil
+	}
+
+	if emailExists == true {
+		fmt.Println("Email exists let's get outta here.")
+		return &model.User{}, nil
+	}
 
 	data := model.User{
 		ID:        id.String(),
@@ -68,26 +133,27 @@ func (db *BUN) InsertUsers(input *model.NewUser) *model.User {
 		CreatedAt: &now,
 	}
 
-	query := "INSERT INTO Users (id, name, email, username, created_at) VALUES ($1, $2, $3, $4, $5)"
-
-	stmt, err := db.client.Prepare(query)
+	res, err := db.client.NewInsert().Model(&data).Exec(context.Background())
 
 	if err != nil {
-		fmt.Print("Error: ", err)
-		return &model.User{}
+		fmt.Println("Could not insert new user: ", err)
+		return &model.User{}, err
 	}
 
-	defer stmt.Close()
+	rows, err := res.RowsAffected()
 
-	if _, err := stmt.Exec(data.ID, data.Name, data.Email, data.Username, data.CreatedAt); err != nil {
-		fmt.Print("Error Could not save users into the database: ", err)
-		return &model.User{}
+	if err != nil {
+		fmt.Println("Could not insert new user. Something went wrong.")
+		return nil, err
 	}
 
-	// create stripe customer.
-	data = db.createStripeCustomer(data)
+	if rows > 0 {
+		fmt.Println("Created New User.")
 
-	return &data
+		return &data, nil
+	}
+
+	return &model.User{}, nil
 }
 
 func (db *BUN) GetAccounts(limit int) ([]*model.User, error) {
@@ -141,7 +207,6 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 	// load env
 	envErr := godotenv.Load()
-	now := time.Now()
 
 	if envErr != nil {
 		fmt.Print("dotenv couldn't load")
@@ -149,50 +214,20 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 	var user model.User
 
-	rows, err := db.client.NewUpdate().Model(&user).Set("last_login = ?", now).Where("email = ?", email).Returning("*").Exec(context.Background())
+	count, err := db.client.NewSelect().Model(&user).Where("email = ?", email).ScanAndCount(context.Background())
 
 	if err != nil {
-		return "Error in updating login", err
+		return "User does not exist", err
 	}
 
-	row, err := rows.RowsAffected()
-
-	if err != nil {
-		fmt.Println("No rows updated: ", err)
-		return "No User found", err
-	}
-
-	if row > 0 {
-		// create token and return.
-		token := utils.EncodeToString(6)
-
-		data := model.Token{
-			UserID:    user.ID,
-			Token:     token,
-			CreatedAt: &now,
-		}
-
-		row, err := db.client.NewInsert().Model(&data).Exec(context.Background())
+	if count > 0 {
+		newUser, err := db.generateToken(user)
 
 		if err != nil {
-			fmt.Println("Could not insert token into db")
-			return "Error", nil
+			fmt.Println("Could not generate token")
 		}
 
-		rows, _ := row.RowsAffected()
-
-		if rows > 0 {
-
-			// send email.
-			utils.SendMail(
-				user.Email,
-				"glitchd Login Verification",
-				"<h3>Your Login code is: </h3><br /><h1>"+token+"</h1>",
-				"Your login code is: "+token,
-			)
-
-			return user.ID, nil
-		}
+		return newUser.ID, nil
 	}
 
 	return "No user found", nil
