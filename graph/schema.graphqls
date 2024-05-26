@@ -1,6 +1,6 @@
 directive @goField(
-  forceResolver: Boolean
-  name: String
+    forceResolver: Boolean
+    name: String
 ) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 directive @auth on FIELD_DEFINITION
@@ -15,11 +15,17 @@ type User {
     email: String!
     username: String!
     name: String!
-    photo: String
+    biography: String!
     stripe_customer_id: String!
-    is_active: String!
-    created_at: Time
-    updated_at: Time
+    is_active: Boolean!
+    is_verified: Boolean!
+    photo: String!
+    cover: String!
+    description: String!
+    links: [String!]!
+    last_login: Time!
+    created_at: Time!
+    updated_at: Time!
 }
 
 input NewUser {
@@ -29,13 +35,9 @@ input NewUser {
 }
 
 input UpdateUser {
-    name: String!
     username: String!
-    email: String!
-    photo: String
-    stripe_customer_id: String!
-    is_active: String!
-    updated_at: Time
+    name: String!
+    biography: String!
 }
 
 type Token {
@@ -58,7 +60,7 @@ input NewWaitlist {
 
 type Post {
     id: UUID!
-    user_id: String!
+    channel_id: String!
     title: String!
     caption: String!
     isPremium: Boolean!
@@ -73,10 +75,6 @@ type Post {
 input NewPost {
     user_id: String!
     title: String!
-    caption: String!
-    isPremium: Boolean!
-    isVisible: Boolean!
-    thumbnail: String!
     type: String!
     media: String!
 }
@@ -91,10 +89,113 @@ input UpdatePost {
     media: String!
 }
 
+type Like {
+    id: UUID!
+    user_id: String!
+    post_id: String!
+    created_at: Time!
+}
+
+type Video {
+    id: UUID!
+    title: String!
+    year: Int!
+    description: String!
+    genre: String!
+    trailer: String!
+    poster: String!
+    thumbnail: String!
+    likes: [User!]!
+    dislikes: [User!]!
+    views: Int!
+    created_at: Time!
+    updated_at: Time!
+}
+
+type Message {
+    id: String!
+    channel_id: String!
+    sender_id: String!
+    is_sent: Boolean!
+    drop_code: String!
+    drop_message: String!
+    reply_parent_message_id: String!
+    created_at: Time!
+    updated_at: Time!
+}
+
+input NewMessage {
+    channel_id: String!
+    sender_id: String!
+    is_sent: Boolean!
+    reply_parent_message_id: String!
+}
+
+type Subs {
+    id: UUID!
+    channel: User!
+    user: User!
+    gifter: User!
+    is_gift: Boolean!
+    plan_name: String!
+    tier: String!
+    created_at: Time!
+    updated_at: Time!
+}
+
+input NewSub {
+    channel_id: String!
+    user_id: String!
+    gifter_id: String!
+    is_gift: Boolean!
+    plan_name: String!
+    tier: String!
+}
+
+type Follow {
+    id: UUID!
+    user_id: String!
+    post_id: String!
+    created_at: Time!
+}
+
+input NewFollow {
+    user_id: String!
+    post_id: String!
+}
+
+type Subscription {
+    getMessages(user_id: String!, limit: Int!): [Message!]!
+    getSubs(user_id: String!): [User!]!
+}
+
+type Query {
+    users: [User!]! @auth
+    user(id: ID!): User! @auth
+
+    getUserByUsername(username: String!): User!
+    getUserByEmail(email: String!): User!
+    getUserById(id: String!): User! @auth
+
+    searchUsers(query: String!): [User!]! @auth
+
+    getPostByUserPaginated(user_id: String!, page: Int!, limit: Int!): [Post!]! @auth
+    getPostById(id: String!): Post! @auth
+
+    getLikes(post_id: String!): [Like!]! @auth
+    isLiked(post_id: String!, user_id: String!): Boolean! @auth
+
+    getWaitlist(email: String!): Boolean! @auth
+}
+
 type Mutation {
     createUser(input: NewUser!): User!
-    updateUser(id: String!, input: UpdateUser): User!
-    deleteUser(id: String!): User!
+    updateUser(id: String!, input: UpdateUser): Boolean! @auth
+    updateUserPhoto(id: String!, photo: String!): Boolean! @auth
+    deleteUser(id: String!): User! @auth
+
+    likePost(user_id: String!, post_id: String!): Boolean!
+    unlikePost(user_id: String!, post_id: String!): Boolean!
 
     login(email: String!): String!
     verifyToken(id: String!, token: String!): String!
@@ -106,19 +207,4 @@ type Mutation {
 
     addToWaitlist(input: NewWaitlist!): Waitlist!
     updateWaitlistEntry(email: String!, canEnter: Boolean!): Waitlist!
-}
-
-type Query {
-    users: [User!]! @auth
-    user(id: ID!): User! @auth
-
-    getUserByUsername(username: String!): User! @auth
-    getUserByEmail(email: String!): User! @auth
-    getUserById(id: String!): User! @auth
-    searchUsers(query: String!): [User!]! @auth
-
-    getPostByUserPaginated(user_id: String!, page: Int!, limit: Int!): [Post!]!
-    getPostById(id: String!): Post!
-
-    getWaitlist(email: String!): Boolean! @auth
 }

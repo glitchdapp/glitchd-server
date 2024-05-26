@@ -14,12 +14,17 @@ import (
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
-	return db.CreateUser(input)
+	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input *model.UpdateUser) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
+func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input *model.UpdateUser) (bool, error) {
+	return database.DB.UpdateUser(id, input)
+}
+
+// UpdateUserPhoto is the resolver for the updateUserPhoto field.
+func (r *mutationResolver) UpdateUserPhoto(ctx context.Context, id string, photo string) (bool, error) {
+	return database.DB.UpdateUserPhoto(id, photo)
 }
 
 // DeleteUser is the resolver for the deleteUser field.
@@ -27,29 +32,39 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.Us
 	panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
 }
 
+// LikePost is the resolver for the likePost field.
+func (r *mutationResolver) LikePost(ctx context.Context, userID string, postID string) (bool, error) {
+	panic(fmt.Errorf("not implemented: LikePost - likePost"))
+}
+
+// UnlikePost is the resolver for the unlikePost field.
+func (r *mutationResolver) UnlikePost(ctx context.Context, userID string, postID string) (bool, error) {
+	panic(fmt.Errorf("not implemented: UnlikePost - unlikePost"))
+}
+
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, email string) (string, error) {
-	return db.LoginAccount(email)
+	return database.DB.LoginAccount(email)
 }
 
 // VerifyToken is the resolver for the verifyToken field.
 func (r *mutationResolver) VerifyToken(ctx context.Context, id string, token string) (string, error) {
-	return db.VerifyToken(id, token)
+	return database.DB.VerifyToken(id, token)
 }
 
 // VerifyEmail is the resolver for the verifyEmail field.
 func (r *mutationResolver) VerifyEmail(ctx context.Context, id string, email string) (bool, error) {
-	return db.VerifyEmail(id, email)
+	return database.DB.VerifyEmail(id, email)
 }
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (*model.Post, error) {
-	return db.CreatePost(input)
+	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
 }
 
 // UpdatePost is the resolver for the updatePost field.
 func (r *mutationResolver) UpdatePost(ctx context.Context, id string, input model.UpdatePost) (*model.Post, error) {
-	return db.UpdatePost(id, input)
+	panic(fmt.Errorf("not implemented: UpdatePost - updatePost"))
 }
 
 // DeletePost is the resolver for the deletePost field.
@@ -59,42 +74,42 @@ func (r *mutationResolver) DeletePost(ctx context.Context, id string) (*model.Po
 
 // AddToWaitlist is the resolver for the addToWaitlist field.
 func (r *mutationResolver) AddToWaitlist(ctx context.Context, input model.NewWaitlist) (*model.Waitlist, error) {
-	return db.AddUserToWaitlist(input)
+	panic(fmt.Errorf("not implemented: AddToWaitlist - addToWaitlist"))
 }
 
 // UpdateWaitlistEntry is the resolver for the updateWaitlistEntry field.
 func (r *mutationResolver) UpdateWaitlistEntry(ctx context.Context, email string, canEnter bool) (*model.Waitlist, error) {
-	return db.UpdateWaitlistEntry(email, canEnter)
+	panic(fmt.Errorf("not implemented: UpdateWaitlistEntry - updateWaitlistEntry"))
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
-	return []*model.User{}, nil
+	panic(fmt.Errorf("not implemented: Users - users"))
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	return &model.User{}, nil
+	panic(fmt.Errorf("not implemented: User - user"))
 }
 
 // GetUserByUsername is the resolver for the getUserByUsername field.
 func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
-	return db.GetAccount(username)
+	return database.DB.GetUserByUsername(username)
 }
 
 // GetUserByEmail is the resolver for the getUserByEmail field.
 func (r *queryResolver) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return db.GetAccountByEmail(email)
+	panic(fmt.Errorf("not implemented: GetUserByEmail - getUserByEmail"))
 }
 
 // GetUserByID is the resolver for the getUserById field.
 func (r *queryResolver) GetUserByID(ctx context.Context, id string) (*model.User, error) {
-	return db.GetAccountByID(id)
+	return database.DB.GetUser(id)
 }
 
 // SearchUsers is the resolver for the searchUsers field.
 func (r *queryResolver) SearchUsers(ctx context.Context, query string) ([]*model.User, error) {
-	return db.SearchUsers(query)
+	panic(fmt.Errorf("not implemented: SearchUsers - searchUsers"))
 }
 
 // GetPostByUserPaginated is the resolver for the getPostByUserPaginated field.
@@ -104,12 +119,32 @@ func (r *queryResolver) GetPostByUserPaginated(ctx context.Context, userID strin
 
 // GetPostByID is the resolver for the getPostById field.
 func (r *queryResolver) GetPostByID(ctx context.Context, id string) (*model.Post, error) {
-	return db.GetPostByID(id)
+	panic(fmt.Errorf("not implemented: GetPostByID - getPostById"))
+}
+
+// GetLikes is the resolver for the getLikes field.
+func (r *queryResolver) GetLikes(ctx context.Context, postID string) ([]*model.Like, error) {
+	panic(fmt.Errorf("not implemented: GetLikes - getLikes"))
+}
+
+// IsLiked is the resolver for the isLiked field.
+func (r *queryResolver) IsLiked(ctx context.Context, postID string, userID string) (bool, error) {
+	panic(fmt.Errorf("not implemented: IsLiked - isLiked"))
 }
 
 // GetWaitlist is the resolver for the getWaitlist field.
 func (r *queryResolver) GetWaitlist(ctx context.Context, email string) (bool, error) {
-	return db.IsWaitlisted(email)
+	panic(fmt.Errorf("not implemented: GetWaitlist - getWaitlist"))
+}
+
+// GetMessages is the resolver for the getMessages field.
+func (r *subscriptionResolver) GetMessages(ctx context.Context, channelID string, limit int) (<-chan []*model.Message, error) {
+	panic(fmt.Errorf("not implemented: GetMessages - getMessages"))
+}
+
+// GetSubs is the resolver for the getSubs field.
+func (r *subscriptionResolver) GetSubs(ctx context.Context, channelID string) (<-chan []*model.User, error) {
+	panic(fmt.Errorf("not implemented: GetSubs - getSubs"))
 }
 
 // Mutation returns MutationResolver implementation.
@@ -118,13 +153,9 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-var db = database.Connect()
+type subscriptionResolver struct{ *Resolver }

@@ -8,6 +8,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/glitchd/glitchd-server/database"
 	"github.com/glitchd/glitchd-server/directives"
 	"github.com/glitchd/glitchd-server/graph"
 	"github.com/glitchd/glitchd-server/middlewares"
@@ -28,6 +29,9 @@ func main() {
 	if port == "" {
 		port = defaultPort
 	}
+
+	// connect to database.
+	database.DB = database.Connect()
 
 	router := mux.NewRouter()
 	router.Use(middlewares.AuthMiddleware)

@@ -16,8 +16,7 @@ import (
 )
 
 type CustomClaim struct {
-	ID    string
-	Email string
+	ID string
 	jwt.RegisteredClaims
 }
 
@@ -56,101 +55,134 @@ func (db *BUN) createStripeCustomer(user model.User) model.User {
 	return user
 }
 
-func (db *BUN) generateToken(user model.User) (model.User, error) {
+func (db *BUN) registerUser(email string) (*model.User, bool) {
 	var now = time.Now()
-	// create token and return.
-	token := utils.EncodeToString(6)
-
-	data := model.Token{
-		UserID:    user.ID,
-		Token:     token,
-		CreatedAt: &now,
-	}
-
-	row, err := db.client.NewInsert().Model(&data).Exec(context.Background())
-
-	if err != nil {
-		fmt.Println("Could not insert token into db")
-		return model.User{}, nil
-	}
-
-	rows, _ := row.RowsAffected()
-
-	if rows > 0 {
-
-		// send email.
-		utils.SendMail(
-			user.Email,
-			"Glitchd Login Verification",
-			"<h2>Your login code is: </h2><br /><h1>"+token+"</h1>",
-			"Your login code is: "+token,
-		)
-
-		return user, nil
-	}
-
-	return model.User{}, nil
-}
-
-func (db *BUN) checkEmailExists(email string) (bool, error) {
-	var user model.User
-	count, err := db.client.NewSelect().Model(&user).Where("email = ?", email).ScanAndCount(context.Background())
-
-	if err != nil {
-		fmt.Println("Something went wrong. Could not check if email exists.", err)
-		return false, err
-	}
-
-	if count > 0 {
-		fmt.Println("Email exists go on :).")
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func (db *BUN) CreateUser(input model.NewUser) (*model.User, error) {
-	var now = time.Now()
-	id := uuid.New()
-
-	emailExists, err := db.checkEmailExists(input.Email)
-
-	if err != nil {
-		fmt.Println("Something went wrong when checking for email.")
-		return nil, nil
-	}
-
-	if emailExists == true {
-		fmt.Println("Email exists let's get outta here.")
-		return &model.User{}, nil
-	}
+	id := uuid.New().String()
 
 	data := model.User{
-		ID:        id.String(),
-		Name:      input.Name,
-		Email:     input.Email,
-		Username:  input.Username,
-		CreatedAt: &now,
+		ID:        id,
+		Email:     email,
+		Username:  id,
+		CreatedAt: now,
 	}
 
 	res, err := db.client.NewInsert().Model(&data).Exec(context.Background())
 
 	if err != nil {
-		fmt.Println("Could not insert new user: ", err)
-		return &model.User{}, err
+		fmt.Println("Could not create user. Error: ", err)
 	}
 
-	rows, err := res.RowsAffected()
+	row, err := res.RowsAffected()
 
 	if err != nil {
-		fmt.Println("Could not insert new user. Something went wrong.")
-		return nil, err
+		fmt.Println("Something went wrong while saving the user: ", err)
+	}
+
+	if row > 0 {
+		fmt.Println("Created User successfully")
+		return &data, true
+	}
+
+	return nil, false
+}
+
+func (db *BUN) CreateUsers(input *model.NewUser) (*model.User, error) {
+	var now = time.Now()
+
+	data := model.User{
+		ID:        uuid.New().String(),
+		Email:     input.Email,
+		CreatedAt: now,
+	}
+
+	res, err := db.client.NewInsert().Model(&data).Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not create user. Error: ", err)
+	}
+
+	row, err := res.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Something went wrong while saving the user: ", err)
+	}
+
+	if row > 0 {
+		fmt.Println("Created User successfully")
+		return &data, nil
+	}
+
+	return &data, nil
+}
+
+func (db *BUN) UpdateUser(id string, input *model.UpdateUser) (bool, error) {
+	var now = time.Now()
+
+	data := model.User{}
+
+	row, err := db.client.NewUpdate().Model(&data).Where("id = ?", id).Set("name = ?", input.Name).Set("username = ?", input.Username).Set("biography = ?", input.Biography).Set("updated_at = ?", now).Returning("*").Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Error updating user: ", err)
+		return false, err
+	}
+
+	rows, err := row.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Something went wrong. ", err)
+		return false, err
 	}
 
 	if rows > 0 {
-		fmt.Println("Created New User.")
+		fmt.Println("Updated User Successfully...")
+		return true, nil
+	}
 
-		return &data, nil
+	return true, nil
+}
+
+func (db *BUN) UpdateUserPhoto(id string, photo string) (bool, error) {
+	var now = time.Now()
+
+	data := model.User{}
+
+	row, err := db.client.NewUpdate().Model(&data).Where("id = ?", id).Set("photo = ?", photo).Set("updated_at = ?", now).Returning("*").Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Error updating user photo: ", err)
+		return false, err
+	}
+
+	rows, err := row.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Something went wrong. ", err)
+		return false, err
+	}
+
+	if rows > 0 {
+		fmt.Println("Updated User Photo Successfully...")
+		return true, nil
+	}
+
+	return true, nil
+}
+
+func (db *BUN) DeleteUser(id string) (*model.User, error) {
+	var user model.User
+
+	row, err := db.client.NewDelete().Model(&user).Where("id = ?", id).Returning("*").Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Error deleting user: ", err)
+		return nil, err
+	}
+
+	rows, err := row.RowsAffected()
+
+	if rows > 0 {
+		return &user, nil
 	}
 
 	return &model.User{}, nil
@@ -167,13 +199,26 @@ func (db *BUN) GetAccounts(limit int) ([]*model.User, error) {
 	return users, nil
 }
 
-func (db *BUN) GetAccount(username string) (*model.User, error) {
+func (db *BUN) GetUser(id string) (*model.User, error) {
 	var result model.User
-	row := db.client.NewSelect().Model(&result).Where("username = ?", username).Scan(context.Background())
+
+	err := db.client.NewSelect().Model(&result).Where("id = ?", id).Scan(context.Background())
+
+	if err != nil {
+		fmt.Print("\n Error found when querying for users with id: ", err)
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func (db *BUN) GetAccount(email string) (*model.User, error) {
+	var result model.User
+	row := db.client.NewSelect().Model(&result).Where("email = ?", email).Scan(context.Background())
 
 	if row != nil {
-		fmt.Print("\n Error found when query for users using username: ", row)
-		return &model.User{}, row
+		fmt.Print("\n Error found when query for users using email: ", row)
+		return nil, row
 	}
 
 	return &result, nil
@@ -185,22 +230,60 @@ func (db *BUN) GetAccountByEmail(email string) (*model.User, error) {
 
 	if row != nil {
 		fmt.Print("\n Error found when selecting users by email: ", row)
-		return &model.User{}, row
+		return nil, row
 	}
 
 	return &result, nil
 }
 
-func (db *BUN) GetAccountByID(id string) (*model.User, error) {
+func (db *BUN) GetUserByUsername(username string) (*model.User, error) {
 	var result model.User
-	row := db.client.NewSelect().Model(&result).Where("id = ?", id).Scan(context.Background())
+	row := db.client.NewSelect().Model(&result).Where("username = ?", username).Scan(context.Background())
 
 	if row != nil {
-		fmt.Print("\n Error found when selecting users by id: ", row)
-		return &model.User{}, row
+		fmt.Print("\n Error found when selecting users by email: ", row)
+		return nil, row
 	}
 
 	return &result, nil
+}
+
+func (db *BUN) createLoginToken(user *model.User) (string, error) {
+
+	now := time.Now()
+	// create token and return.
+	token := utils.EncodeToString(6)
+
+	data := model.Token{
+		ID:        uuid.New().String(),
+		UserID:    user.ID,
+		Token:     token,
+		CreatedAt: &now,
+	}
+
+	row, err := db.client.NewInsert().Model(&data).Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not insert token into db. ", err)
+		return "Login Error: Could not insert token", nil
+	}
+
+	rows, _ := row.RowsAffected()
+
+	if rows > 0 {
+
+		// send email.
+		utils.SendMail(
+			user.Email,
+			"Glitchd Login Verification",
+			"<h3>Your Login code is: </h3><br /><h1>"+token+"</h1>",
+			"Your login code is: "+token,
+		)
+
+		return user.ID, nil
+	}
+
+	return "Something went wrong", nil
 }
 
 func (db *BUN) LoginAccount(email string) (string, error) {
@@ -214,29 +297,29 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 	var user model.User
 
-	count, err := db.client.NewSelect().Model(&user).Where("email = ?", email).ScanAndCount(context.Background())
+	err := db.client.NewSelect().Model(&user).Where("email = ?", email).Scan(context.Background())
 
 	if err != nil {
-		return "User does not exist", err
-	}
-
-	if count > 0 {
-		newUser, err := db.generateToken(user)
-
-		if err != nil {
-			fmt.Println("Could not generate token")
+		fmt.Println("No user present...")
+		fmt.Println("Inserting new user...")
+		user, isRegistered := db.registerUser(email)
+		if isRegistered {
+			fmt.Println("Registered user successfully...")
 		}
 
-		return newUser.ID, nil
+		result, err := db.createLoginToken(user)
+
+		return result, err
 	}
 
-	return "No user found", nil
+	result, err := db.createLoginToken(&user)
+
+	return result, err
 }
 
 func JwtGenerate(ctx context.Context, userID string, email string) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, CustomClaim{
-		ID:    userID,
-		Email: email,
+		ID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(1, 0, 0)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -258,7 +341,7 @@ func JwtValidate(ctx context.Context, token string) (*jwt.Token, error) {
 	jwt_secret := []byte(os.Getenv("JWT_SECRET"))
 	return jwt.ParseWithClaims(token, &CustomClaim{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("There's a problem with the signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("there's a problem with the signing method: %v", token.Header["alg"])
 		}
 		return jwt_secret, nil
 	})

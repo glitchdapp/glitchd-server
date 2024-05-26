@@ -12,6 +12,8 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 )
 
+var DB *BUN
+
 type BUN struct {
 	client *bun.DB
 }

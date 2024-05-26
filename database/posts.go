@@ -14,13 +14,9 @@ func (db *BUN) CreatePost(input model.NewPost) (*model.Post, error) {
 
 	post.ID = uuid.New().String()
 	post.Title = input.Title
-	post.Caption = input.Caption
 	post.Media = input.Media
-	post.IsPremium = input.IsPremium
-	post.IsVisible = input.IsVisible
-	post.Thumbnail = input.Thumbnail
 	post.Type = input.Type
-	post.UserID = input.UserID
+	post.ChannelID = input.UserID
 	post.CreatedAt = time.Now()
 	post.UpdatedAt = time.Now()
 
@@ -82,6 +78,19 @@ func (db *BUN) DeletePost(id string) (*model.Post, error) {
 	return nil, nil
 }
 
+func (db *BUN) GetPosts() ([]*model.Post, error) {
+	var posts []*model.Post
+
+	err := db.client.NewSelect().Model(&posts).Scan(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not fetch posts: ", err)
+		return nil, err
+	}
+
+	return posts, nil
+}
+
 func (db *BUN) GetPostByID(id string) (*model.Post, error) {
 	var post model.Post
 
@@ -93,4 +102,42 @@ func (db *BUN) GetPostByID(id string) (*model.Post, error) {
 	}
 
 	return &post, nil
+}
+
+func (db *BUN) LikePost(user_id string, post_id string) (bool, error) {
+	var like model.Like
+
+	_, err := db.client.NewInsert().Model(&like).Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Error found when liking post: ", err)
+		return false, err
+	}
+
+	return true, nil
+
+}
+
+func (db *BUN) UnlikePost(user_id string, post_id string) (bool, error) {
+	var like model.Like
+
+	row, err := db.client.NewDelete().Model(&like).Where("user_id = ?", user_id).Where("post_id = ?", post_id).Returning("*").Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not unlike post: ", err)
+		return false, err
+	}
+
+	rows, err := row.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Could not fetch rows to unlike post: ", err)
+		return false, err
+	}
+
+	if rows > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
