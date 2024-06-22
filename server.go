@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
@@ -13,6 +15,7 @@ import (
 	"github.com/glitchd/glitchd-server/graph"
 	"github.com/glitchd/glitchd-server/middlewares"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 )
 
@@ -36,12 +39,22 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(middlewares.AuthMiddleware)
 
-	c := graph.Config{Resolvers: &graph.Resolver{}}
+	c := graph.Config{Resolvers: &graph.Resolver{Rooms: sync.Map{}}}
 	c.Directives.Auth = directives.Auth
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(c))
-
-	srv.AddTransport(&transport.Websocket{})
+	srv := handler.New(graph.NewExecutableSchema(c))
+	srv.AddTransport(transport.POST{})
+	srv.AddTransport(&transport.Websocket{
+		Upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				// add checking origin logic to decide return true or false
+				return true
+			},
+		},
+		KeepAlivePingInterval: 10 * time.Second,
+	})
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", srv)

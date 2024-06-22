@@ -27,9 +27,14 @@ func (r *mutationResolver) UpdateUserPhoto(ctx context.Context, id string, photo
 	return database.DB.UpdateUserPhoto(id, photo)
 }
 
+// UpdateUserCoverPhoto is the resolver for the updateUserCoverPhoto field.
+func (r *mutationResolver) UpdateUserCoverPhoto(ctx context.Context, id string, photo string) (bool, error) {
+	return database.DB.UpdateUserCoverPhoto(id, photo)
+}
+
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
+	return database.DB.DeleteUser(id)
 }
 
 // LikePost is the resolver for the likePost field.
@@ -57,6 +62,28 @@ func (r *mutationResolver) VerifyEmail(ctx context.Context, id string, email str
 	return database.DB.VerifyEmail(id, email)
 }
 
+// PostMessage is the resolver for the postMessage field.
+func (r *mutationResolver) PostMessage(ctx context.Context, input *model.NewMessage) (*model.Message, error) {
+	room := r.getRoom(input.ChannelID)
+
+	msg, err := database.DB.CreateMessage(input)
+
+	// append only the latest message if the channel id matches.
+	room.Message = msg
+
+	// Notify all active subscriptions that a new message has been posted by posted. In this case we push the now
+	// updated ChatMessages to all clients that care about it.
+	room.Observers.Range(func(_, v any) bool {
+		observer := v.(*Observer)
+
+		if observer.ChannelID == msg.ChannelID {
+			observer.Message <- msg
+		}
+		return true
+	})
+	return msg, err
+}
+
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (*model.Post, error) {
 	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
@@ -82,6 +109,31 @@ func (r *mutationResolver) UpdateWaitlistEntry(ctx context.Context, email string
 	panic(fmt.Errorf("not implemented: UpdateWaitlistEntry - updateWaitlistEntry"))
 }
 
+// FollowUser is the resolver for the followUser field.
+func (r *mutationResolver) FollowUser(ctx context.Context, input model.FollowInput) (*model.Follower, error) {
+	return database.DB.AddFollower(input)
+}
+
+// RemoveFollower is the resolver for the removeFollower field.
+func (r *mutationResolver) RemoveFollower(ctx context.Context, userID string, followerID string) (bool, error) {
+	return database.DB.RemoveFollower(userID, followerID)
+}
+
+// UpdateChatIdentity is the resolver for the updateChatIdentity field.
+func (r *mutationResolver) UpdateChatIdentity(ctx context.Context, userID string, input model.ChatIdentityInput) (bool, error) {
+	return database.DB.UpdateChatIdentity(userID, input)
+}
+
+// AddUserInChat is the resolver for the addUserInChat field.
+func (r *mutationResolver) AddUserInChat(ctx context.Context, channelID string, userID string) (bool, error) {
+	return database.DB.AddUserInChat(channelID, userID)
+}
+
+// RemoveUserInChat is the resolver for the removeUserInChat field.
+func (r *mutationResolver) RemoveUserInChat(ctx context.Context, channelID string, userID string) (bool, error) {
+	return database.DB.DeleteUserInChat(channelID, userID)
+}
+
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	panic(fmt.Errorf("not implemented: Users - users"))
@@ -99,7 +151,7 @@ func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) 
 
 // GetUserByEmail is the resolver for the getUserByEmail field.
 func (r *queryResolver) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: GetUserByEmail - getUserByEmail"))
+	return database.DB.GetAccountByEmail(email)
 }
 
 // GetUserByID is the resolver for the getUserById field.
@@ -109,7 +161,7 @@ func (r *queryResolver) GetUserByID(ctx context.Context, id string) (*model.User
 
 // SearchUsers is the resolver for the searchUsers field.
 func (r *queryResolver) SearchUsers(ctx context.Context, query string) ([]*model.User, error) {
-	panic(fmt.Errorf("not implemented: SearchUsers - searchUsers"))
+	return database.DB.SearchUsers(query)
 }
 
 // GetPostByUserPaginated is the resolver for the getPostByUserPaginated field.
@@ -137,13 +189,68 @@ func (r *queryResolver) GetWaitlist(ctx context.Context, email string) (bool, er
 	panic(fmt.Errorf("not implemented: GetWaitlist - getWaitlist"))
 }
 
+// GetFollowers is the resolver for the getFollowers field.
+func (r *queryResolver) GetFollowers(ctx context.Context, userID string) ([]*model.User, error) {
+	return database.DB.GetFollowers(userID)
+}
+
+// GetFollowing is the resolver for the getFollowing field.
+func (r *queryResolver) GetFollowing(ctx context.Context, followerID string) ([]*model.User, error) {
+	return database.DB.GetFollowing(followerID)
+}
+
+// CountFollowers is the resolver for the countFollowers field.
+func (r *queryResolver) CountFollowers(ctx context.Context, userID string) (int, error) {
+	return database.DB.CountFollowers(userID)
+}
+
+// CountFollowing is the resolver for the countFollowing field.
+func (r *queryResolver) CountFollowing(ctx context.Context, followerID string) (int, error) {
+	return database.DB.CountFollowing(followerID)
+}
+
+// IsFollowing is the resolver for the isFollowing field.
+func (r *queryResolver) IsFollowing(ctx context.Context, userID string) (bool, error) {
+	return database.DB.IsFollowing(userID)
+}
+
+// GetRecentMessages is the resolver for the getRecentMessages field.
+func (r *queryResolver) GetRecentMessages(ctx context.Context, channelID string) ([]*model.Message, error) {
+	return database.DB.GetRecentMessages(channelID)
+}
+
+// GetChatIdentity is the resolver for the getChatIdentity field.
+func (r *queryResolver) GetChatIdentity(ctx context.Context, userID string) (*model.ChatIdentity, error) {
+	return database.DB.GetChatIdentity(userID)
+}
+
+// GetUsersInChat is the resolver for the getUsersInChat field.
+func (r *queryResolver) GetUsersInChat(ctx context.Context, channelID string) ([]*model.User, error) {
+	return database.DB.GetUsersInChat(channelID)
+}
+
 // GetMessages is the resolver for the getMessages field.
-func (r *subscriptionResolver) GetMessages(ctx context.Context, channelID string, limit int) (<-chan []*model.Message, error) {
-	panic(fmt.Errorf("not implemented: GetMessages - getMessages"))
+func (r *subscriptionResolver) GetMessages(ctx context.Context, channelID string) (<-chan *model.Message, error) {
+	room := r.getRoom(channelID)
+
+	id := randString(8)
+	events := make(chan *model.Message, 1)
+
+	go func() {
+		<-ctx.Done()
+		room.Observers.Delete(id)
+	}()
+
+	room.Observers.Store(id, &Observer{
+		ChannelID: channelID,
+		Message:   events,
+	})
+
+	return events, nil
 }
 
 // GetSubs is the resolver for the getSubs field.
-func (r *subscriptionResolver) GetSubs(ctx context.Context, channelID string) (<-chan []*model.User, error) {
+func (r *subscriptionResolver) GetSubs(ctx context.Context, userID string) (<-chan *model.User, error) {
 	panic(fmt.Errorf("not implemented: GetSubs - getSubs"))
 }
 

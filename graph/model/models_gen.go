@@ -6,6 +6,38 @@ import (
 	"time"
 )
 
+type Activity struct {
+	ID        string    `json:"id"`
+	Target    *User     `json:"target"`
+	Entity    string    `json:"entity"`
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type ChatIdentity struct {
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
+	Color  string `json:"color"`
+	Badge  string `json:"badge"`
+}
+
+type ChatIdentityInput struct {
+	Color string `json:"color"`
+	Badge string `json:"badge"`
+}
+
+type FollowInput struct {
+	UserID     string `json:"user_id"`
+	FollowerID string `json:"follower_id"`
+}
+
+type Follower struct {
+	ID         string    `json:"id"`
+	UserID     string    `json:"user_id"`
+	FollowerID string    `json:"follower_id"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type Like struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
@@ -17,7 +49,10 @@ type Message struct {
 	ID                   string    `json:"id"`
 	ChannelID            string    `json:"channel_id"`
 	SenderID             string    `json:"sender_id"`
+	Sender               *User     `json:"sender"`
 	IsSent               bool      `json:"is_sent"`
+	Message              string    `json:"message"`
+	MessageType          string    `json:"message_type"`
 	DropCode             string    `json:"drop_code"`
 	DropMessage          string    `json:"drop_message"`
 	ReplyParentMessageID string    `json:"reply_parent_message_id"`
@@ -31,6 +66,8 @@ type Mutation struct {
 type NewMessage struct {
 	ChannelID            string `json:"channel_id"`
 	SenderID             string `json:"sender_id"`
+	Message              string `json:"message"`
+	MessageType          string `json:"message_type"`
 	IsSent               bool   `json:"is_sent"`
 	ReplyParentMessageID string `json:"reply_parent_message_id"`
 }
@@ -47,7 +84,6 @@ type NewSub struct {
 	UserID    string `json:"user_id"`
 	GifterID  string `json:"gifter_id"`
 	IsGift    bool   `json:"is_gift"`
-	PlanName  string `json:"plan_name"`
 	Tier      string `json:"tier"`
 }
 
@@ -59,6 +95,15 @@ type NewUser struct {
 
 type NewWaitlist struct {
 	Email string `json:"email"`
+}
+
+type Notification struct {
+	ID        string   `json:"id"`
+	Owner     string   `json:"owner"`
+	Entity    string   `json:"entity"`
+	Message   string   `json:"message"`
+	SeenBy    []string `json:"seen_by"`
+	CreatedAt string   `json:"created_at"`
 }
 
 type Post struct {
@@ -84,7 +129,6 @@ type Subs struct {
 	User      *User     `json:"user"`
 	Gifter    *User     `json:"gifter"`
 	IsGift    bool      `json:"is_gift"`
-	PlanName  string    `json:"plan_name"`
 	Tier      string    `json:"tier"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -117,21 +161,34 @@ type UpdateUser struct {
 }
 
 type User struct {
-	ID               string    `json:"id"`
-	Email            string    `json:"email"`
-	Username         string    `json:"username"`
-	Name             string    `json:"name"`
-	Biography        string    `json:"biography"`
-	StripeCustomerID string    `json:"stripe_customer_id"`
-	IsActive         bool      `json:"is_active"`
-	IsVerified       bool      `json:"is_verified"`
-	Photo            string    `json:"photo"`
-	Cover            string    `json:"cover"`
-	Description      string    `json:"description"`
-	Links            []string  `json:"links"`
-	LastLogin        time.Time `json:"last_login"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ID               string        `json:"id"`
+	Email            string        `json:"email"`
+	Username         string        `json:"username"`
+	Name             string        `json:"name"`
+	Biography        string        `json:"biography"`
+	StripeCustomerID string        `json:"stripe_customer_id"`
+	IsActive         bool          `json:"is_active"`
+	IsVerified       bool          `json:"is_verified"`
+	Photo            string        `json:"photo"`
+	Cover            string        `json:"cover"`
+	Description      string        `json:"description"`
+	ChatIdentity     *ChatIdentity `json:"chat_identity"`
+	Links            []string      `json:"links"`
+	LastLogin        time.Time     `json:"last_login"`
+	CreatedAt        time.Time     `json:"created_at"`
+	UpdatedAt        time.Time     `json:"updated_at"`
+}
+
+type UsersInChat struct {
+	ID        string `json:"id"`
+	ChannelID string `json:"channel_id"`
+	UserID    string `json:"user_id"`
+	User      *User  `json:"user"`
+}
+
+type UsersInChatInput struct {
+	ChannelID string `json:"channel_id"`
+	UserID    string `json:"user_id"`
 }
 
 type Video struct {

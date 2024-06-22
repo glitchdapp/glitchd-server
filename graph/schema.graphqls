@@ -22,6 +22,7 @@ type User {
     photo: String!
     cover: String!
     description: String!
+    chat_identity: ChatIdentity!
     links: [String!]!
     last_login: Time!
     created_at: Time!
@@ -113,10 +114,13 @@ type Video {
 }
 
 type Message {
-    id: String!
+    id: UUID!
     channel_id: String!
     sender_id: String!
+    sender: User!
     is_sent: Boolean!
+    message: String!
+    message_type: String!
     drop_code: String!
     drop_message: String!
     reply_parent_message_id: String!
@@ -127,8 +131,51 @@ type Message {
 input NewMessage {
     channel_id: String!
     sender_id: String!
+    message: String!
+    message_type: String!
     is_sent: Boolean!
     reply_parent_message_id: String!
+}
+
+type ChatIdentity {
+    id: UUID!
+    user_id: String!
+    color: String!
+    badge: String!
+}
+
+input ChatIdentityInput {
+    color: String!
+    badge: String!
+}
+
+type UsersInChat {
+    id: UUID!
+    channel_id: String!
+    user_id: String!
+    user: User!
+}
+
+input UsersInChatInput {
+    channel_id: String!
+    user_id: String!
+}
+
+type Activity {
+    id: UUID!
+    target: User!
+    entity: String!
+    message: String!
+    created_at: Time!
+}
+
+type Notification {
+    id: UUID!
+    owner: UUID!
+    entity: String!
+    message: String!
+    seen_by: [String!]!
+    created_at: String!
 }
 
 type Subs {
@@ -137,7 +184,6 @@ type Subs {
     user: User!
     gifter: User!
     is_gift: Boolean!
-    plan_name: String!
     tier: String!
     created_at: Time!
     updated_at: Time!
@@ -148,25 +194,24 @@ input NewSub {
     user_id: String!
     gifter_id: String!
     is_gift: Boolean!
-    plan_name: String!
     tier: String!
 }
 
-type Follow {
+type Follower {
     id: UUID!
     user_id: String!
-    post_id: String!
+    follower_id: String!
     created_at: Time!
 }
 
-input NewFollow {
+input FollowInput {
     user_id: String!
-    post_id: String!
+    follower_id: String!
 }
 
 type Subscription {
-    getMessages(user_id: String!, limit: Int!): [Message!]!
-    getSubs(user_id: String!): [User!]!
+    getMessages(channel_id: String!): Message!
+    getSubs(user_id: String!): User!
 }
 
 type Query {
@@ -186,25 +231,45 @@ type Query {
     isLiked(post_id: String!, user_id: String!): Boolean! @auth
 
     getWaitlist(email: String!): Boolean! @auth
+
+    getFollowers(user_id: String!): [User!]! @auth
+    getFollowing(follower_id: String!): [User!]! @auth
+    countFollowers(user_id: String!): Int! @auth
+    countFollowing(follower_id: String!): Int! @auth
+    isFollowing(user_id: String!): Boolean! @auth
+
+    getRecentMessages(channel_id: String!): [Message!]! @auth
+    getChatIdentity(user_id: String!): ChatIdentity! @auth
+    getUsersInChat(channel_id: String!): [User!]! @auth
 }
 
 type Mutation {
     createUser(input: NewUser!): User!
     updateUser(id: String!, input: UpdateUser): Boolean! @auth
     updateUserPhoto(id: String!, photo: String!): Boolean! @auth
+    updateUserCoverPhoto(id: String!, photo: String!): Boolean! @auth
     deleteUser(id: String!): User! @auth
 
-    likePost(user_id: String!, post_id: String!): Boolean!
-    unlikePost(user_id: String!, post_id: String!): Boolean!
+    likePost(user_id: String!, post_id: String!): Boolean! @auth
+    unlikePost(user_id: String!, post_id: String!): Boolean! @auth
 
     login(email: String!): String!
     verifyToken(id: String!, token: String!): String!
     verifyEmail(id: String!, email: String!): Boolean!
 
-    createPost(input: NewPost!): Post!
-    updatePost(id: String!, input: UpdatePost!): Post!
-    deletePost(id: String!): Post!
+    postMessage(input: NewMessage): Message!
 
-    addToWaitlist(input: NewWaitlist!): Waitlist!
-    updateWaitlistEntry(email: String!, canEnter: Boolean!): Waitlist!
+    createPost(input: NewPost!): Post! @auth
+    updatePost(id: String!, input: UpdatePost!): Post! @auth
+    deletePost(id: String!): Post! @auth
+
+    addToWaitlist(input: NewWaitlist!): Waitlist! @auth
+    updateWaitlistEntry(email: String!, canEnter: Boolean!): Waitlist! @auth
+
+    followUser(input: FollowInput!): Follower! @auth
+    removeFollower(user_id: String!, follower_id: String!): Boolean!
+
+    updateChatIdentity(user_id: String!, input: ChatIdentityInput!): Boolean! @auth
+    addUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
+    removeUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
 }

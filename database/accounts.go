@@ -13,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
+	"github.com/uptrace/bun"
 )
 
 type CustomClaim struct {
@@ -169,6 +170,33 @@ func (db *BUN) UpdateUserPhoto(id string, photo string) (bool, error) {
 	return true, nil
 }
 
+func (db *BUN) UpdateUserCoverPhoto(id string, photo string) (bool, error) {
+	var now = time.Now()
+
+	data := model.User{}
+
+	row, err := db.client.NewUpdate().Model(&data).Where("id = ?", id).Set("cover = ?", photo).Set("updated_at = ?", now).Returning("*").Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Error updating user cover photo: ", err)
+		return false, err
+	}
+
+	rows, err := row.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Something went wrong. ", err)
+		return false, err
+	}
+
+	if rows > 0 {
+		fmt.Println("Updated User Cover Photo Successfully...")
+		return true, nil
+	}
+
+	return true, nil
+}
+
 func (db *BUN) DeleteUser(id string) (*model.User, error) {
 	var user model.User
 
@@ -190,7 +218,7 @@ func (db *BUN) DeleteUser(id string) (*model.User, error) {
 
 func (db *BUN) GetAccounts(limit int) ([]*model.User, error) {
 	var users []*model.User
-	row := db.client.NewSelect().Model(&users).Limit(limit).Scan(context.Background())
+	row := db.client.NewRaw("SELECT * FROM ? LIMIT ?", bun.Ident("users"), limit).Scan(context.Background(), &users)
 
 	if row != nil {
 		fmt.Print("\n Error found when querying all users: ", row)
@@ -202,48 +230,75 @@ func (db *BUN) GetAccounts(limit int) ([]*model.User, error) {
 func (db *BUN) GetUser(id string) (*model.User, error) {
 	var result model.User
 
-	err := db.client.NewSelect().Model(&result).Where("id = ?", id).Scan(context.Background())
+	err := db.client.NewRaw("SELECT * FROM users WHERE id = ?", id).Scan(context.Background(), &result)
 
 	if err != nil {
 		fmt.Print("\n Error found when querying for users with id: ", err)
 		return nil, err
 	}
 
+	chat_identity, err := db.GetChatIdentity(result.ID)
+	if err != nil {
+		fmt.Println("Could not load chat identity something went wrong. ", err)
+	}
+
+	result.ChatIdentity = chat_identity
+
 	return &result, nil
 }
 
 func (db *BUN) GetAccount(email string) (*model.User, error) {
 	var result model.User
-	row := db.client.NewSelect().Model(&result).Where("email = ?", email).Scan(context.Background())
+	row := db.client.NewRaw("SELECT * FROM users WHERE email = ?", email).Scan(context.Background(), &result)
 
 	if row != nil {
 		fmt.Print("\n Error found when query for users using email: ", row)
 		return nil, row
 	}
 
+	chat_identity, err := db.GetChatIdentity(result.ID)
+	if err != nil {
+		fmt.Println("Could not load chat identity something went wrong. ", err)
+	}
+
+	result.ChatIdentity = chat_identity
+
 	return &result, nil
 }
 
 func (db *BUN) GetAccountByEmail(email string) (*model.User, error) {
 	var result model.User
-	row := db.client.NewSelect().Model(&result).Where("email = ?", email).Scan(context.Background())
+	row := db.client.NewRaw("SELECT * FROM users WHERE email = ?", email).Scan(context.Background(), &result)
 
 	if row != nil {
 		fmt.Print("\n Error found when selecting users by email: ", row)
 		return nil, row
 	}
+
+	chat_identity, err := db.GetChatIdentity(result.ID)
+	if err != nil {
+		fmt.Println("Could not load chat identity something went wrong. ", err)
+	}
+
+	result.ChatIdentity = chat_identity
 
 	return &result, nil
 }
 
 func (db *BUN) GetUserByUsername(username string) (*model.User, error) {
 	var result model.User
-	row := db.client.NewSelect().Model(&result).Where("username = ?", username).Scan(context.Background())
-
+	row := db.client.NewRaw("SELECT * FROM users WHERE lower(username) = lower(?)", username).Scan(context.Background(), &result)
 	if row != nil {
-		fmt.Print("\n Error found when selecting users by email: ", row)
+		fmt.Print("\n Error found when selecting users by username: ", row)
 		return nil, row
 	}
+
+	chat_identity, err := db.GetChatIdentity(result.ID)
+	if err != nil {
+		fmt.Println("Could not load chat identity something went wrong. ", err)
+	}
+
+	result.ChatIdentity = chat_identity
 
 	return &result, nil
 }
@@ -410,7 +465,7 @@ func (db *BUN) VerifyEmail(id string, email string) (bool, error) {
 func (db *BUN) SearchUsers(query string) ([]*model.User, error) {
 	var users []*model.User
 
-	err := db.client.NewSelect().Model(&users).Where("name LIKE ? OR biography LIKE ? OR username LIKE ? OR email LIKE ?", query, query, query, query).Scan(context.Background())
+	err := db.client.NewRaw("SELECT * FROM users WHERE LOWER(name) LIKE LOWER(?) OR LOWER(username) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?)", "%"+query+"%", "%"+query+"%", query).Scan(context.Background(), &users)
 
 	if err != nil {
 		fmt.Println("Could not search Users. An error occured. Error: ", err)
