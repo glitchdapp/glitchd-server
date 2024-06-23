@@ -67,7 +67,10 @@ func (db *BUN) registerUser(email string) (*model.User, bool) {
 		CreatedAt: now,
 	}
 
-	res, err := db.client.NewInsert().Model(&data).Exec(context.Background())
+	res, err := db.client.NewRaw(
+		"INSERT INTO ? (id, email, username, created_at) VALUES (?, ?, ?, ?)",
+		bun.Ident("users"), id, email, id, now,
+	).Exec(context.Background())
 
 	if err != nil {
 		fmt.Println("Could not create user. Error: ", err)
