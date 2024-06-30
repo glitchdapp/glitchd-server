@@ -10,6 +10,11 @@ scalar UUID
 scalar JSON
 scalar Any
 
+type PageInfo {
+    endCursor: String!
+    hasNextPage: Boolean!
+}
+
 type User {
     id: UUID!
     email: String!
@@ -48,69 +53,61 @@ type Token {
     created_at: Time
 }
 
-type Waitlist {
-    id: UUID!
-    email: String!
-    canEnter: Boolean!
-    created_at: Time
-}
-
-input NewWaitlist {
-    email: String!
-}
-
-type Post {
+type Video {
     id: UUID!
     channel_id: String!
     title: String!
     caption: String!
-    isPremium: Boolean!
-    isVisible: Boolean!
-    thumbnail: String!
-    type: String!
-    media: String!
-    created_at: Time!
-    updated_at: Time!
-}
-
-input NewPost {
-    user_id: String!
-    title: String!
-    type: String!
-    media: String!
-}
-
-input UpdatePost {
-    title: String!
-    caption: String!
-    isPremium: Boolean!
-    isVisible: Boolean!
-    thumbnail: String!
-    type: String!
-    media: String!
-}
-
-type Like {
-    id: UUID!
-    user_id: String!
-    post_id: String!
-    created_at: Time!
-}
-
-type Video {
-    id: UUID!
-    title: String!
-    year: Int!
-    description: String!
-    genre: String!
-    trailer: String!
+    category: String!
     poster: String!
     thumbnail: String!
-    likes: [User!]!
-    dislikes: [User!]!
-    views: Int!
+    media: String!
+    job_id: String!
+    tier: Int!
+    isPremium: Boolean!
+    isVisible: Boolean!
     created_at: Time!
     updated_at: Time!
+}
+
+type VideosResult {
+    edges: [VideosEdge!]!
+    pageInfo: PageInfo!
+}
+
+type VideosEdge {
+    cursor: String!
+    node: Video!
+}
+
+type VideoView {
+    id: UUID!
+    video_id: String!
+    user_id: String!
+    created_at: Time!
+}
+
+input NewVideo {
+    channel_id: String!
+    title: String!
+    job_id: String!
+}
+
+input NewVideoView {
+    channel_id: String!
+    user_id: String!
+    video_id: String!
+}
+
+input UpdateVideo {
+    title: String!
+    caption: String!
+    category: String!
+    poster: String!
+    thumbnail: String!
+    media: String!
+    tier: Int!
+    isVisible: Boolean!
 }
 
 type Message {
@@ -178,7 +175,7 @@ type Notification {
     created_at: String!
 }
 
-type Subs {
+type Membership {
     id: UUID!
     channel: User!
     user: User!
@@ -189,12 +186,32 @@ type Subs {
     updated_at: Time!
 }
 
-input NewSub {
+input NewMembership {
     channel_id: String!
     user_id: String!
     gifter_id: String!
     is_gift: Boolean!
     tier: String!
+}
+
+type MembershipDetails {
+    id: UUID!
+    channel_id: String!
+    tier: Int!
+    name: String!
+    description: String!
+    badges: [String!]!
+    cost: Int!
+    created_at: Time!
+    updated_at: Time!
+}
+
+input MembershipDetailsInput {
+    channel_id: String!
+    tier: Int!
+    name: String!
+    description: String!
+    cost: Int!
 }
 
 type Follower {
@@ -211,6 +228,7 @@ input FollowInput {
 
 type Subscription {
     getMessages(channel_id: String!): Message!
+    getVideoViewers(video_id: String!): Int!
     getSubs(user_id: String!): User!
 }
 
@@ -224,13 +242,11 @@ type Query {
 
     searchUsers(query: String!): [User!]! @auth
 
-    getPostByUserPaginated(user_id: String!, page: Int!, limit: Int!): [Post!]! @auth
-    getPostById(id: String!): Post! @auth
-
-    getLikes(post_id: String!): [Like!]! @auth
-    isLiked(post_id: String!, user_id: String!): Boolean! @auth
-
-    getWaitlist(email: String!): Boolean! @auth
+    getVideos(channel_id: String!, first: Int!, after: String!): VideosResult @auth
+    getVideoById(id: String!): Video! @auth
+    getVideoViews(video_id: String!): Int! @auth
+    getChannelViews(channel_id: String!): Int! @auth
+    countChannelVideos(channel_id: String!): Int! @auth
 
     getFollowers(user_id: String!): [User!]! @auth
     getFollowing(follower_id: String!): [User!]! @auth
@@ -241,6 +257,7 @@ type Query {
     getRecentMessages(channel_id: String!): [Message!]! @auth
     getChatIdentity(user_id: String!): ChatIdentity! @auth
     getUsersInChat(channel_id: String!): [User!]! @auth
+
 }
 
 type Mutation {
@@ -250,8 +267,8 @@ type Mutation {
     updateUserCoverPhoto(id: String!, photo: String!): Boolean! @auth
     deleteUser(id: String!): User! @auth
 
-    likePost(user_id: String!, post_id: String!): Boolean! @auth
-    unlikePost(user_id: String!, post_id: String!): Boolean! @auth
+    likeVideo(user_id: String!, post_id: String!): Boolean! @auth
+    unlikeVideo(user_id: String!, post_id: String!): Boolean! @auth
 
     login(email: String!): String!
     verifyToken(id: String!, token: String!): String!
@@ -259,12 +276,10 @@ type Mutation {
 
     postMessage(input: NewMessage): Message!
 
-    createPost(input: NewPost!): Post! @auth
-    updatePost(id: String!, input: UpdatePost!): Post! @auth
-    deletePost(id: String!): Post! @auth
-
-    addToWaitlist(input: NewWaitlist!): Waitlist! @auth
-    updateWaitlistEntry(email: String!, canEnter: Boolean!): Waitlist! @auth
+    createVideo(input: NewVideo!): Video! @auth
+    createVideoView(input: NewVideoView!): Int! @auth
+    updateVideo(id: String!, input: UpdateVideo!): Video! @auth
+    deleteVideo(id: String!): Video! @auth
 
     followUser(input: FollowInput!): Follower! @auth
     removeFollower(user_id: String!, follower_id: String!): Boolean!
@@ -272,4 +287,6 @@ type Mutation {
     updateChatIdentity(user_id: String!, input: ChatIdentityInput!): Boolean! @auth
     addUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
     removeUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
+
+    createMembershipDetails(input: MembershipDetailsInput!): Boolean!
 }

@@ -133,7 +133,6 @@ func (db *BUN) IsUserInChat(channel_id string, user_id string) (bool, error) {
 	).Scan(context.Background(), &users)
 
 	if err != nil {
-		fmt.Println("Log: User not in chat. ", err)
 		return false, err
 	}
 

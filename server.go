@@ -39,7 +39,7 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(middlewares.AuthMiddleware)
 
-	c := graph.Config{Resolvers: &graph.Resolver{Rooms: sync.Map{}}}
+	c := graph.Config{Resolvers: &graph.Resolver{Rooms: sync.Map{}, Viewers: sync.Map{}}}
 	c.Directives.Auth = directives.Auth
 
 	srv := handler.New(graph.NewExecutableSchema(c))

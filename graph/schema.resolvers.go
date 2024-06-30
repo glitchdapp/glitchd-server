@@ -37,14 +37,14 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.Us
 	return database.DB.DeleteUser(id)
 }
 
-// LikePost is the resolver for the likePost field.
-func (r *mutationResolver) LikePost(ctx context.Context, userID string, postID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: LikePost - likePost"))
+// LikeVideo is the resolver for the likeVideo field.
+func (r *mutationResolver) LikeVideo(ctx context.Context, userID string, postID string) (bool, error) {
+	panic(fmt.Errorf("not implemented: LikeVideo - likeVideo"))
 }
 
-// UnlikePost is the resolver for the unlikePost field.
-func (r *mutationResolver) UnlikePost(ctx context.Context, userID string, postID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: UnlikePost - unlikePost"))
+// UnlikeVideo is the resolver for the unlikeVideo field.
+func (r *mutationResolver) UnlikeVideo(ctx context.Context, userID string, postID string) (bool, error) {
+	panic(fmt.Errorf("not implemented: UnlikeVideo - unlikeVideo"))
 }
 
 // Login is the resolver for the login field.
@@ -84,29 +84,40 @@ func (r *mutationResolver) PostMessage(ctx context.Context, input *model.NewMess
 	return msg, err
 }
 
-// CreatePost is the resolver for the createPost field.
-func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
+// CreateVideo is the resolver for the createVideo field.
+func (r *mutationResolver) CreateVideo(ctx context.Context, input model.NewVideo) (*model.Video, error) {
+	return database.DB.CreateVideo(input)
 }
 
-// UpdatePost is the resolver for the updatePost field.
-func (r *mutationResolver) UpdatePost(ctx context.Context, id string, input model.UpdatePost) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: UpdatePost - updatePost"))
+// CreateVideoView is the resolver for the createVideoView field.
+func (r *mutationResolver) CreateVideoView(ctx context.Context, input model.NewVideoView) (int, error) {
+	viewer := r.getVideoViewers(input.VideoID)
+
+	viewer.Count = viewer.Count + 1
+
+	res, err := database.DB.CreateVideoView(input)
+
+	// Notify all active subscriptions that a new message has been posted by posted. In this case we push the now
+	// updated ChatMessages to all clients that care about it.
+	viewer.Observers.Range(func(_, v any) bool {
+		observer := v.(*VideoObserver)
+
+		if observer.VideoID == input.VideoID {
+			observer.Count <- 1
+		}
+		return true
+	})
+	return res, err
 }
 
-// DeletePost is the resolver for the deletePost field.
-func (r *mutationResolver) DeletePost(ctx context.Context, id string) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: DeletePost - deletePost"))
+// UpdateVideo is the resolver for the updateVideo field.
+func (r *mutationResolver) UpdateVideo(ctx context.Context, id string, input model.UpdateVideo) (*model.Video, error) {
+	return database.DB.UpdateVideo(id, input)
 }
 
-// AddToWaitlist is the resolver for the addToWaitlist field.
-func (r *mutationResolver) AddToWaitlist(ctx context.Context, input model.NewWaitlist) (*model.Waitlist, error) {
-	panic(fmt.Errorf("not implemented: AddToWaitlist - addToWaitlist"))
-}
-
-// UpdateWaitlistEntry is the resolver for the updateWaitlistEntry field.
-func (r *mutationResolver) UpdateWaitlistEntry(ctx context.Context, email string, canEnter bool) (*model.Waitlist, error) {
-	panic(fmt.Errorf("not implemented: UpdateWaitlistEntry - updateWaitlistEntry"))
+// DeleteVideo is the resolver for the deleteVideo field.
+func (r *mutationResolver) DeleteVideo(ctx context.Context, id string) (*model.Video, error) {
+	panic(fmt.Errorf("not implemented: DeleteVideo - deleteVideo"))
 }
 
 // FollowUser is the resolver for the followUser field.
@@ -132,6 +143,11 @@ func (r *mutationResolver) AddUserInChat(ctx context.Context, channelID string, 
 // RemoveUserInChat is the resolver for the removeUserInChat field.
 func (r *mutationResolver) RemoveUserInChat(ctx context.Context, channelID string, userID string) (bool, error) {
 	return database.DB.DeleteUserInChat(channelID, userID)
+}
+
+// CreateMembershipDetails is the resolver for the createMembershipDetails field.
+func (r *mutationResolver) CreateMembershipDetails(ctx context.Context, input model.MembershipDetailsInput) (bool, error) {
+	return database.DB.CreateMembershipDetails(input)
 }
 
 // Users is the resolver for the users field.
@@ -164,29 +180,29 @@ func (r *queryResolver) SearchUsers(ctx context.Context, query string) ([]*model
 	return database.DB.SearchUsers(query)
 }
 
-// GetPostByUserPaginated is the resolver for the getPostByUserPaginated field.
-func (r *queryResolver) GetPostByUserPaginated(ctx context.Context, userID string, page int, limit int) ([]*model.Post, error) {
-	panic(fmt.Errorf("not implemented: GetPostByUserPaginated - getPostByUserPaginated"))
+// GetVideos is the resolver for the getVideos field.
+func (r *queryResolver) GetVideos(ctx context.Context, channelID string, first int, after string) (*model.VideosResult, error) {
+	return database.DB.GetVideos(channelID, first, after)
 }
 
-// GetPostByID is the resolver for the getPostById field.
-func (r *queryResolver) GetPostByID(ctx context.Context, id string) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: GetPostByID - getPostById"))
+// GetVideoByID is the resolver for the getVideoById field.
+func (r *queryResolver) GetVideoByID(ctx context.Context, id string) (*model.Video, error) {
+	return database.DB.GetVideoByID(id)
 }
 
-// GetLikes is the resolver for the getLikes field.
-func (r *queryResolver) GetLikes(ctx context.Context, postID string) ([]*model.Like, error) {
-	panic(fmt.Errorf("not implemented: GetLikes - getLikes"))
+// GetVideoViews is the resolver for the getVideoViews field.
+func (r *queryResolver) GetVideoViews(ctx context.Context, videoID string) (int, error) {
+	return database.DB.GetVideoViews(videoID)
 }
 
-// IsLiked is the resolver for the isLiked field.
-func (r *queryResolver) IsLiked(ctx context.Context, postID string, userID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: IsLiked - isLiked"))
+// GetChannelViews is the resolver for the getChannelViews field.
+func (r *queryResolver) GetChannelViews(ctx context.Context, channelID string) (int, error) {
+	return database.DB.GetChannelViews(channelID)
 }
 
-// GetWaitlist is the resolver for the getWaitlist field.
-func (r *queryResolver) GetWaitlist(ctx context.Context, email string) (bool, error) {
-	panic(fmt.Errorf("not implemented: GetWaitlist - getWaitlist"))
+// CountChannelVideos is the resolver for the countChannelVideos field.
+func (r *queryResolver) CountChannelVideos(ctx context.Context, channelID string) (int, error) {
+	return database.DB.CountChannelVideos(channelID)
 }
 
 // GetFollowers is the resolver for the getFollowers field.
@@ -244,6 +260,26 @@ func (r *subscriptionResolver) GetMessages(ctx context.Context, channelID string
 	room.Observers.Store(id, &Observer{
 		ChannelID: channelID,
 		Message:   events,
+	})
+
+	return events, nil
+}
+
+// GetVideoViewers is the resolver for the getVideoViewers field.
+func (r *subscriptionResolver) GetVideoViewers(ctx context.Context, videoID string) (<-chan int, error) {
+	viewer := r.getVideoViewers(videoID)
+
+	id := randString(8)
+	events := make(chan int, 1)
+
+	go func() {
+		<-ctx.Done()
+		viewer.Observers.Delete(id)
+	}()
+
+	viewer.Observers.Store(id, &VideoObserver{
+		VideoID: videoID,
+		Count:   events,
 	})
 
 	return events, nil

@@ -38,11 +38,35 @@ type Follower struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
-type Like struct {
+type Membership struct {
 	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	PostID    string    `json:"post_id"`
+	Channel   *User     `json:"channel"`
+	User      *User     `json:"user"`
+	Gifter    *User     `json:"gifter"`
+	IsGift    bool      `json:"is_gift"`
+	Tier      string    `json:"tier"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type MembershipDetails struct {
+	ID          string    `json:"id"`
+	ChannelID   string    `json:"channel_id"`
+	Tier        int       `json:"tier"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Badges      []string  `json:"badges"`
+	Cost        int       `json:"cost"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type MembershipDetailsInput struct {
+	ChannelID   string `json:"channel_id"`
+	Tier        int    `json:"tier"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Cost        int    `json:"cost"`
 }
 
 type Message struct {
@@ -63,6 +87,14 @@ type Message struct {
 type Mutation struct {
 }
 
+type NewMembership struct {
+	ChannelID string `json:"channel_id"`
+	UserID    string `json:"user_id"`
+	GifterID  string `json:"gifter_id"`
+	IsGift    bool   `json:"is_gift"`
+	Tier      string `json:"tier"`
+}
+
 type NewMessage struct {
 	ChannelID            string `json:"channel_id"`
 	SenderID             string `json:"sender_id"`
@@ -72,29 +104,22 @@ type NewMessage struct {
 	ReplyParentMessageID string `json:"reply_parent_message_id"`
 }
 
-type NewPost struct {
-	UserID string `json:"user_id"`
-	Title  string `json:"title"`
-	Type   string `json:"type"`
-	Media  string `json:"media"`
-}
-
-type NewSub struct {
-	ChannelID string `json:"channel_id"`
-	UserID    string `json:"user_id"`
-	GifterID  string `json:"gifter_id"`
-	IsGift    bool   `json:"is_gift"`
-	Tier      string `json:"tier"`
-}
-
 type NewUser struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
 }
 
-type NewWaitlist struct {
-	Email string `json:"email"`
+type NewVideo struct {
+	ChannelID string `json:"channel_id"`
+	Title     string `json:"title"`
+	JobID     string `json:"job_id"`
+}
+
+type NewVideoView struct {
+	ChannelID string `json:"channel_id"`
+	UserID    string `json:"user_id"`
+	VideoID   string `json:"video_id"`
 }
 
 type Notification struct {
@@ -106,32 +131,12 @@ type Notification struct {
 	CreatedAt string   `json:"created_at"`
 }
 
-type Post struct {
-	ID        string    `json:"id"`
-	ChannelID string    `json:"channel_id"`
-	Title     string    `json:"title"`
-	Caption   string    `json:"caption"`
-	IsPremium bool      `json:"isPremium"`
-	IsVisible bool      `json:"isVisible"`
-	Thumbnail string    `json:"thumbnail"`
-	Type      string    `json:"type"`
-	Media     string    `json:"media"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+type PageInfo struct {
+	EndCursor   string `json:"endCursor"`
+	HasNextPage bool   `json:"hasNextPage"`
 }
 
 type Query struct {
-}
-
-type Subs struct {
-	ID        string    `json:"id"`
-	Channel   *User     `json:"channel"`
-	User      *User     `json:"user"`
-	Gifter    *User     `json:"gifter"`
-	IsGift    bool      `json:"is_gift"`
-	Tier      string    `json:"tier"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Subscription struct {
@@ -144,20 +149,21 @@ type Token struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 }
 
-type UpdatePost struct {
-	Title     string `json:"title"`
-	Caption   string `json:"caption"`
-	IsPremium bool   `json:"isPremium"`
-	IsVisible bool   `json:"isVisible"`
-	Thumbnail string `json:"thumbnail"`
-	Type      string `json:"type"`
-	Media     string `json:"media"`
-}
-
 type UpdateUser struct {
 	Username  string `json:"username"`
 	Name      string `json:"name"`
 	Biography string `json:"biography"`
+}
+
+type UpdateVideo struct {
+	Title     string `json:"title"`
+	Caption   string `json:"caption"`
+	Category  string `json:"category"`
+	Poster    string `json:"poster"`
+	Thumbnail string `json:"thumbnail"`
+	Media     string `json:"media"`
+	Tier      int    `json:"tier"`
+	IsVisible bool   `json:"isVisible"`
 }
 
 type User struct {
@@ -192,24 +198,35 @@ type UsersInChatInput struct {
 }
 
 type Video struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	Year        int       `json:"year"`
-	Description string    `json:"description"`
-	Genre       string    `json:"genre"`
-	Trailer     string    `json:"trailer"`
-	Poster      string    `json:"poster"`
-	Thumbnail   string    `json:"thumbnail"`
-	Likes       []*User   `json:"likes"`
-	Dislikes    []*User   `json:"dislikes"`
-	Views       int       `json:"views"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID        string    `json:"id"`
+	ChannelID string    `json:"channel_id"`
+	Title     string    `json:"title"`
+	Caption   string    `json:"caption"`
+	Category  string    `json:"category"`
+	Poster    string    `json:"poster"`
+	Thumbnail string    `json:"thumbnail"`
+	Media     string    `json:"media"`
+	JobID     string    `json:"job_id"`
+	Tier      int       `json:"tier"`
+	IsPremium bool      `json:"isPremium"`
+	IsVisible bool      `json:"isVisible"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type Waitlist struct {
-	ID        string     `json:"id"`
-	Email     string     `json:"email"`
-	CanEnter  bool       `json:"canEnter"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+type VideoView struct {
+	ID        string    `json:"id"`
+	VideoID   string    `json:"video_id"`
+	UserID    string    `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type VideosEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Video `json:"node"`
+}
+
+type VideosResult struct {
+	Edges    []*VideosEdge `json:"edges"`
+	PageInfo *PageInfo     `json:"pageInfo"`
 }
