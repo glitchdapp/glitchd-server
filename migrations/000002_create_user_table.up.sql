@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     biography TEXT,
     stripe_customer_id TEXT UNIQUE,
     stripe_connected_link BOOLEAN DEFAULT FALSE,
-    photo TEXT NOT NULL,
+    photo TEXT,
     cover TEXT,
     description TEXT,
     links TEXT,
