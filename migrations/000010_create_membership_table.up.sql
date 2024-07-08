@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS memberships (
     gifter TEXT,
     is_gift BOOLEAN NOT NULL DEFAULT false,
     tier TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
     created_at timestamp NOT NULL,
     updated_at timestamp NOT NULL DEFAULT NOW()
 );

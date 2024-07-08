@@ -146,6 +146,34 @@ func (db *BUN) UpdateUser(id string, input *model.UpdateUser) (bool, error) {
 	return true, nil
 }
 
+func (db *BUN) UpdateUserStripe(id string, input *model.UserStripeInput) (bool, error) {
+	var now = time.Now()
+
+	row, err := db.client.NewRaw(
+		"UPDATE users SET stripe_customer_id = ?, stripe_connected_link = ?, updated_at = ? WHERE id = ?",
+		input.StripeCustomerID, input.StripeConnectedLink, now, id,
+	).Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Error updating user: ", err)
+		return false, err
+	}
+
+	rows, err := row.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Something went wrong. ", err)
+		return false, err
+	}
+
+	if rows > 0 {
+		fmt.Println("Updated User Successfully...", input.StripeConnectedLink)
+		return true, nil
+	}
+
+	return true, nil
+}
+
 func (db *BUN) UpdateUserPhoto(id string, photo string) (bool, error) {
 	var now = time.Now()
 

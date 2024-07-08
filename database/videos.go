@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/glitchd/glitchd-server/graph/model"
@@ -11,24 +12,21 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func (db *BUN) CreateVideo(input model.NewVideo) (*model.Video, error) {
-	var video model.Video
+func (db *BUN) CreateVideo(input model.NewVideo) (bool, error) {
+	var id = uuid.New().String()
+	var now = time.Now()
 
-	video.ID = uuid.New().String()
-	video.Title = input.Title
-	video.ChannelID = input.ChannelID
-	video.JobID = input.JobID
-	video.CreatedAt = time.Now()
-	video.UpdatedAt = time.Now()
-
-	_, err := db.client.NewInsert().Model(&video).Exec(context.Background())
+	_, err := db.client.NewRaw(
+		"INSERT INTO videos (id, title, channel_id, job_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+		id, input.Title, input.ChannelID, input.JobID, now, now,
+	).Exec(context.Background())
 
 	if err != nil {
 		fmt.Println("Error found when creating video: ", err)
-		return nil, err
+		return false, err
 	}
 
-	return &video, nil
+	return true, nil
 }
 
 func (db *BUN) CreateVideoView(input model.NewVideoView) (int, error) {
@@ -49,6 +47,31 @@ func (db *BUN) CreateVideoView(input model.NewVideoView) (int, error) {
 	count, _ := db.GetVideoViews(input.VideoID)
 
 	return count, nil
+}
+
+func (db *BUN) deleteVideoViews(id string) (bool, error) {
+	var video_view model.VideoView
+
+	row, err := db.client.NewDelete().Model(&video_view).Where("video_id = ?", id).Returning("*").Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not delete video views: ", err)
+		return false, err
+	}
+
+	rows, err := row.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Could not fetch rows in delete video views: ", err)
+		return false, err
+	}
+
+	if rows > 0 {
+		return true, nil
+	}
+
+	return false, nil
+
 }
 
 func (db *BUN) GetVideoViews(video_id string) (int, error) {
@@ -84,64 +107,89 @@ func (db *BUN) CountChannelVideos(channel_id string) (int, error) {
 	return count, nil
 }
 
-func (db *BUN) UpdateVideo(id string, input model.UpdateVideo) (*model.Video, error) {
-	var video model.Video
+func (db *BUN) UpdateVideo(id string, input model.UpdateVideo) (bool, error) {
 
-	row, err := db.client.NewUpdate().Model(&video).Set("title = ?", input.Title).Set("caption = ?", input.Caption).Set("media = ?", input.Media).Set("tier = ?", input.Tier).Set("is_visible = ?", input.IsVisible).Set("thumbnail = ?", input.Thumbnail).Where("id = ?", id).Returning("*").Exec(context.Background())
-
+	row, err := db.client.NewRaw(
+		"UPDATE videos SET title = ?, caption = ?,  media = ?, tier = ?, is_visible = ?, thumbnail = ?, category = ? WHERE id = ?",
+		input.Title, input.Caption, input.Media, input.Tier, input.IsVisible, input.Thumbnail, input.Category, id,
+	).Exec(context.Background())
 	if err != nil {
 		fmt.Println("Could not update video: ", err)
-		return nil, err
+		return false, err
 	}
 
 	rows, err := row.RowsAffected()
 
 	if err != nil {
 		fmt.Println("Could not fetch rows in update video: ", err)
-		return nil, err
+		return false, err
 	}
 
 	if rows > 0 {
-		return &video, nil
+		return true, nil
 	}
 
-	return nil, nil
+	return false, nil
 }
 
-func (db *BUN) DeleteVideo(id string) (*model.Video, error) {
+func (db *BUN) DeleteVideo(id string) (bool, error) {
 	var video model.Video
 
 	row, err := db.client.NewDelete().Model(&video).Where("id = ?", id).Returning("*").Exec(context.Background())
 
 	if err != nil {
 		fmt.Println("Could not delete video: ", err)
-		return nil, err
+		return false, err
 	}
 
 	rows, err := row.RowsAffected()
 
 	if err != nil {
 		fmt.Println("Could not fetch rows in delete video: ", err)
-		return nil, err
+		return false, err
 	}
 
 	if rows > 0 {
-		return &video, nil
+		deleted, _ := db.deleteVideoViews(id)
+
+		if deleted {
+			fmt.Println("Deleted video views")
+			return true, nil
+		}
+
+		return true, nil
 	}
 
-	return nil, nil
+	return false, nil
 }
 
 func (db *BUN) GetVideos(channelID string, first int, after string) (*model.VideosResult, error) {
 	var videos []*model.Video
+	var decodedCursor string
+	b, err := base64.StdEncoding.DecodeString(after)
+
+	if err != nil {
+		fmt.Println("Could not decode cursor: ", err)
+		return nil, err
+	}
+
+	decodedCursor = string(b)
+	t := strings.Trim(decodedCursor, " +0000")
+
 	if after == "" {
-		err := db.client.NewSelect().Model(&videos).Where("channel_id = ?", channelID).Limit(first).Scan(context.Background())
+		err := db.client.NewRaw(
+			"SELECT * FROM videos WHERE channel_id = ? ORDER BY created_at ASC LIMIT ?",
+			channelID, first,
+		).Scan(context.Background(), &videos)
 		if err != nil {
 			fmt.Println("Could not fetch videos: ", err)
 			return nil, err
 		}
 	} else {
-		err := db.client.NewSelect().Model(&videos).Where("channel_id = ?", channelID).Where("created_at > ?", after).Limit(first).Scan(context.Background())
+		err := db.client.NewRaw(
+			"SELECT * FROM videos WHERE channel_id = ? AND created_at > ? ORDER BY created_at ASC LIMIT ?",
+			channelID, t, first,
+		).Scan(context.Background(), &videos)
 		if err != nil {
 			fmt.Println("Could not fetch videos: ", err)
 			return nil, err
@@ -152,14 +200,28 @@ func (db *BUN) GetVideos(channelID string, first int, after string) (*model.Vide
 	var edges []*model.VideosEdge
 	var pageInfo *model.PageInfo
 
+	if len(videos) == 0 {
+		pageInfo = &model.PageInfo{
+			EndCursor:   "",
+			HasNextPage: false,
+		}
+
+		result = &model.VideosResult{
+			PageInfo: pageInfo,
+			Edges:    []*model.VideosEdge{},
+		}
+		return result, nil
+	}
+
 	for _, v := range videos {
+		v.Views, _ = db.GetVideoViews(v.ID)
 		edges = append(edges, &model.VideosEdge{
-			Cursor: base64.StdEncoding.EncodeToString([]byte(v.ID)),
+			Cursor: base64.StdEncoding.EncodeToString([]byte(v.CreatedAt.String())),
 			Node:   v,
 		})
 	}
 
-	var endCursor = videos[len(videos)-1].CreatedAt.String()
+	var endCursor = base64.StdEncoding.EncodeToString([]byte(videos[len(videos)-1].CreatedAt.String()))
 	var hasNextPage bool
 
 	count, err := db.client.NewSelect().Model(&videos).Where("channel_id = ?", channelID).Where("created_at > ?", videos[len(videos)-1].CreatedAt).Count(context.Background())
@@ -186,10 +248,180 @@ func (db *BUN) GetVideos(channelID string, first int, after string) (*model.Vide
 	return result, nil
 }
 
+func (db *BUN) GetAllVideos(first int, after string) (*model.VideosResult, error) {
+	var videos []*model.Video
+	var decodedCursor string
+	b, err := base64.StdEncoding.DecodeString(after)
+
+	if err != nil {
+		fmt.Println("Could not decode cursor: ", err)
+		return nil, err
+	}
+
+	decodedCursor = string(b)
+	t := strings.Trim(decodedCursor, " +0000")
+
+	if after == "" {
+		err := db.client.NewRaw(
+			"SELECT * FROM videos ORDER BY created_at ASC LIMIT ?",
+			first,
+		).Scan(context.Background(), &videos)
+		if err != nil {
+			fmt.Println("Could not fetch videos: ", err)
+			return nil, err
+		}
+	} else {
+		err := db.client.NewRaw(
+			"SELECT * FROM videos WHERE created_at > ? ORDER BY created_at ASC LIMIT ?",
+			t, first,
+		).Scan(context.Background(), &videos)
+		if err != nil {
+			fmt.Println("Could not fetch videos: ", err)
+			return nil, err
+		}
+	}
+
+	var result *model.VideosResult
+	var edges []*model.VideosEdge
+	var pageInfo *model.PageInfo
+
+	if len(videos) == 0 {
+		pageInfo = &model.PageInfo{
+			EndCursor:   "",
+			HasNextPage: false,
+		}
+
+		result = &model.VideosResult{
+			PageInfo: pageInfo,
+			Edges:    []*model.VideosEdge{},
+		}
+		return result, nil
+	}
+
+	for _, v := range videos {
+		v.Views, _ = db.GetVideoViews(v.ID)
+		edges = append(edges, &model.VideosEdge{
+			Cursor: base64.StdEncoding.EncodeToString([]byte(v.CreatedAt.String())),
+			Node:   v,
+		})
+	}
+
+	var endCursor = base64.StdEncoding.EncodeToString([]byte(videos[len(videos)-1].CreatedAt.String()))
+	var hasNextPage bool
+
+	count, err := db.client.NewSelect().Model(&videos).Where("created_at > ?", videos[len(videos)-1].CreatedAt).Count(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not count remaining video rows for pagination: ", err)
+		return nil, err
+	}
+
+	if count > 0 {
+		hasNextPage = true
+	}
+
+	pageInfo = &model.PageInfo{
+		EndCursor:   endCursor,
+		HasNextPage: hasNextPage,
+	}
+
+	result = &model.VideosResult{
+		PageInfo: pageInfo,
+		Edges:    edges,
+	}
+
+	return result, nil
+}
+
+func (db *BUN) GetVideosByCategory(category string, first int, after string) (*model.VideosResult, error) {
+	var videos []*model.Video
+	var decodedCursor string
+	b, err := base64.StdEncoding.DecodeString(after)
+
+	if err != nil {
+		fmt.Println("Could not decode cursor: ", err)
+		return nil, err
+	}
+
+	decodedCursor = string(b)
+	t := strings.Trim(decodedCursor, " +0000")
+
+	if after == "" {
+		err := db.client.NewRaw(
+			"SELECT * FROM videos WHERE category = ? ORDER BY created_at ASC LIMIT ?",
+			category, first,
+		).Scan(context.Background(), &videos)
+		if err != nil {
+			fmt.Println("Could not fetch videos: ", err)
+			return nil, err
+		}
+	} else {
+		err := db.client.NewRaw(
+			"SELECT * FROM videos WHERE channel_id = ? AND created_at > ? ORDER BY created_at ASC LIMIT ?",
+			category, t, first,
+		).Scan(context.Background(), &videos)
+		if err != nil {
+			fmt.Println("Could not fetch videos: ", err)
+			return nil, err
+		}
+	}
+
+	var result *model.VideosResult
+	var edges []*model.VideosEdge
+	var pageInfo *model.PageInfo
+
+	if len(videos) == 0 {
+		pageInfo = &model.PageInfo{
+			EndCursor:   "",
+			HasNextPage: false,
+		}
+
+		result = &model.VideosResult{
+			PageInfo: pageInfo,
+			Edges:    []*model.VideosEdge{},
+		}
+		return result, nil
+	}
+
+	for _, v := range videos {
+		v.Views, _ = db.GetVideoViews(v.ID)
+		edges = append(edges, &model.VideosEdge{
+			Cursor: base64.StdEncoding.EncodeToString([]byte(v.CreatedAt.String())),
+			Node:   v,
+		})
+	}
+
+	var endCursor = base64.StdEncoding.EncodeToString([]byte(videos[len(videos)-1].CreatedAt.String()))
+	var hasNextPage bool
+
+	count, err := db.client.NewSelect().Model(&videos).Where("category = ?", category).Where("created_at > ?", videos[len(videos)-1].CreatedAt).Count(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not count remaining video rows for pagination: ", err)
+		return nil, err
+	}
+
+	if count > 0 {
+		hasNextPage = true
+	}
+
+	pageInfo = &model.PageInfo{
+		EndCursor:   endCursor,
+		HasNextPage: hasNextPage,
+	}
+
+	result = &model.VideosResult{
+		PageInfo: pageInfo,
+		Edges:    edges,
+	}
+
+	return result, nil
+}
+
 func (db *BUN) GetVideoByID(id string) (*model.Video, error) {
 	var video model.Video
 
-	err := db.client.NewSelect().Model(&video).Where("id = ?", id).Scan(context.Background())
+	err := db.client.NewRaw("select * from videos where id = ?", id).Scan(context.Background(), &video)
 
 	if err != nil {
 		fmt.Println("Could not fetch video: ", err)

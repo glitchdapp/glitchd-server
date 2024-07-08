@@ -6,16 +6,10 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/glitchd/glitchd-server/database"
 	"github.com/glitchd/glitchd-server/graph/model"
 )
-
-// CreateUser is the resolver for the createUser field.
-func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
-}
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input *model.UpdateUser) (bool, error) {
@@ -32,19 +26,14 @@ func (r *mutationResolver) UpdateUserCoverPhoto(ctx context.Context, id string, 
 	return database.DB.UpdateUserCoverPhoto(id, photo)
 }
 
+// UpdateUserStripe is the resolver for the updateUserStripe field.
+func (r *mutationResolver) UpdateUserStripe(ctx context.Context, id string, input *model.UserStripeInput) (bool, error) {
+	return database.DB.UpdateUserStripe(id, input)
+}
+
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.User, error) {
 	return database.DB.DeleteUser(id)
-}
-
-// LikeVideo is the resolver for the likeVideo field.
-func (r *mutationResolver) LikeVideo(ctx context.Context, userID string, postID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: LikeVideo - likeVideo"))
-}
-
-// UnlikeVideo is the resolver for the unlikeVideo field.
-func (r *mutationResolver) UnlikeVideo(ctx context.Context, userID string, postID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: UnlikeVideo - unlikeVideo"))
 }
 
 // Login is the resolver for the login field.
@@ -85,7 +74,7 @@ func (r *mutationResolver) PostMessage(ctx context.Context, input *model.NewMess
 }
 
 // CreateVideo is the resolver for the createVideo field.
-func (r *mutationResolver) CreateVideo(ctx context.Context, input model.NewVideo) (*model.Video, error) {
+func (r *mutationResolver) CreateVideo(ctx context.Context, input model.NewVideo) (bool, error) {
 	return database.DB.CreateVideo(input)
 }
 
@@ -111,18 +100,35 @@ func (r *mutationResolver) CreateVideoView(ctx context.Context, input model.NewV
 }
 
 // UpdateVideo is the resolver for the updateVideo field.
-func (r *mutationResolver) UpdateVideo(ctx context.Context, id string, input model.UpdateVideo) (*model.Video, error) {
+func (r *mutationResolver) UpdateVideo(ctx context.Context, id string, input model.UpdateVideo) (bool, error) {
 	return database.DB.UpdateVideo(id, input)
 }
 
 // DeleteVideo is the resolver for the deleteVideo field.
-func (r *mutationResolver) DeleteVideo(ctx context.Context, id string) (*model.Video, error) {
-	panic(fmt.Errorf("not implemented: DeleteVideo - deleteVideo"))
+func (r *mutationResolver) DeleteVideo(ctx context.Context, id string) (bool, error) {
+	return database.DB.DeleteVideo(id)
 }
 
 // FollowUser is the resolver for the followUser field.
 func (r *mutationResolver) FollowUser(ctx context.Context, input model.FollowInput) (*model.Follower, error) {
-	return database.DB.AddFollower(input)
+	activity := r.getChannelActivity(input.UserID)
+
+	res, err := database.DB.AddFollower(input)
+
+	act, _ := database.DB.CreateActivity(input.FollowerID, input.UserID, "follow", "Followed you")
+
+	// Notify all active subscriptions that a new message has been posted by posted. In this case we push the now
+	// updated ChatMessages to all clients that care about it.
+	activity.Observers.Range(func(_, v any) bool {
+		observer := v.(*ActivityObserver)
+
+		if observer.ChannelID == activity.ChannelID {
+			observer.Activity <- act
+		}
+		return true
+	})
+
+	return res, err
 }
 
 // RemoveFollower is the resolver for the removeFollower field.
@@ -145,19 +151,56 @@ func (r *mutationResolver) RemoveUserInChat(ctx context.Context, channelID strin
 	return database.DB.DeleteUserInChat(channelID, userID)
 }
 
+// CreatePayment is the resolver for the createPayment field.
+func (r *mutationResolver) CreatePayment(ctx context.Context, input model.PaymentInput) (bool, error) {
+	return database.DB.CreatePayment(input)
+}
+
+// UpdatePayment is the resolver for the updatePayment field.
+func (r *mutationResolver) UpdatePayment(ctx context.Context, sessionID string, input model.PaymentInput) (bool, error) {
+	return database.DB.UpdatePayment(sessionID, input)
+}
+
 // CreateMembershipDetails is the resolver for the createMembershipDetails field.
 func (r *mutationResolver) CreateMembershipDetails(ctx context.Context, input model.MembershipDetailsInput) (bool, error) {
 	return database.DB.CreateMembershipDetails(input)
 }
 
-// Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
-	panic(fmt.Errorf("not implemented: Users - users"))
+// CreateMembership is the resolver for the createMembership field.
+func (r *mutationResolver) CreateMembership(ctx context.Context, input model.NewMembership) (*model.Membership, error) {
+	activity := r.getChannelActivity(input.ChannelID)
+
+	res, err := database.DB.CreateMembership(input)
+
+	act, _ := database.DB.CreateActivity(input.UserID, input.ChannelID, "subscription", "Subscribed to Tier "+input.Tier)
+
+	// Notify all active subscriptions that a new message has been posted by posted. In this case we push the now
+	// updated ChatMessages to all clients that care about it.
+	activity.Observers.Range(func(_, v any) bool {
+		observer := v.(*ActivityObserver)
+
+		if observer.ChannelID == activity.ChannelID {
+			observer.Activity <- act
+		}
+		return true
+	})
+
+	return res, err
 }
 
-// User is the resolver for the user field.
-func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+// UpdateMembership is the resolver for the updateMembership field.
+func (r *mutationResolver) UpdateMembership(ctx context.Context, id string, input model.NewMembership) (bool, error) {
+	return database.DB.UpdateMembership(id, input)
+}
+
+// UpdateMembershipStatus is the resolver for the updateMembershipStatus field.
+func (r *mutationResolver) UpdateMembershipStatus(ctx context.Context, id string, isActive bool) (bool, error) {
+	return database.DB.UpdateMembershipStatus(id, isActive)
+}
+
+// DeleteMembership is the resolver for the deleteMembership field.
+func (r *mutationResolver) DeleteMembership(ctx context.Context, id string) (bool, error) {
+	return database.DB.DeleteMembership(id)
 }
 
 // GetUserByUsername is the resolver for the getUserByUsername field.
@@ -185,6 +228,16 @@ func (r *queryResolver) GetVideos(ctx context.Context, channelID string, first i
 	return database.DB.GetVideos(channelID, first, after)
 }
 
+// GetAllVideos is the resolver for the getAllVideos field.
+func (r *queryResolver) GetAllVideos(ctx context.Context, first int, after string) (*model.VideosResult, error) {
+	return database.DB.GetAllVideos(first, after)
+}
+
+// GetVideosByCategory is the resolver for the getVideosByCategory field.
+func (r *queryResolver) GetVideosByCategory(ctx context.Context, category string, first int, after string) (*model.VideosResult, error) {
+	return database.DB.GetVideosByCategory(category, first, after)
+}
+
 // GetVideoByID is the resolver for the getVideoById field.
 func (r *queryResolver) GetVideoByID(ctx context.Context, id string) (*model.Video, error) {
 	return database.DB.GetVideoByID(id)
@@ -206,13 +259,13 @@ func (r *queryResolver) CountChannelVideos(ctx context.Context, channelID string
 }
 
 // GetFollowers is the resolver for the getFollowers field.
-func (r *queryResolver) GetFollowers(ctx context.Context, userID string) ([]*model.User, error) {
-	return database.DB.GetFollowers(userID)
+func (r *queryResolver) GetFollowers(ctx context.Context, userID string, first int, after string) (*model.FollowersResult, error) {
+	return database.DB.GetFollowers(userID, first, after)
 }
 
 // GetFollowing is the resolver for the getFollowing field.
-func (r *queryResolver) GetFollowing(ctx context.Context, followerID string) ([]*model.User, error) {
-	return database.DB.GetFollowing(followerID)
+func (r *queryResolver) GetFollowing(ctx context.Context, followerID string, first int, after string) (*model.FollowersResult, error) {
+	return database.DB.GetFollowing(followerID, first, after)
 }
 
 // CountFollowers is the resolver for the countFollowers field.
@@ -220,14 +273,14 @@ func (r *queryResolver) CountFollowers(ctx context.Context, userID string) (int,
 	return database.DB.CountFollowers(userID)
 }
 
-// CountFollowing is the resolver for the countFollowing field.
-func (r *queryResolver) CountFollowing(ctx context.Context, followerID string) (int, error) {
-	return database.DB.CountFollowing(followerID)
-}
-
 // IsFollowing is the resolver for the isFollowing field.
 func (r *queryResolver) IsFollowing(ctx context.Context, userID string) (bool, error) {
 	return database.DB.IsFollowing(userID)
+}
+
+// CountFollowing is the resolver for the countFollowing field.
+func (r *queryResolver) CountFollowing(ctx context.Context, followerID string) (int, error) {
+	return database.DB.CountFollowing(followerID)
 }
 
 // GetRecentMessages is the resolver for the getRecentMessages field.
@@ -243,6 +296,21 @@ func (r *queryResolver) GetChatIdentity(ctx context.Context, userID string) (*mo
 // GetUsersInChat is the resolver for the getUsersInChat field.
 func (r *queryResolver) GetUsersInChat(ctx context.Context, channelID string) ([]*model.User, error) {
 	return database.DB.GetUsersInChat(channelID)
+}
+
+// GetPaymentBySession is the resolver for the getPaymentBySession field.
+func (r *queryResolver) GetPaymentBySession(ctx context.Context, sessionID string) (*model.Payment, error) {
+	return database.DB.GetPaymentBySession(sessionID)
+}
+
+// GetUserMembership is the resolver for the getUserMembership field.
+func (r *queryResolver) GetUserMembership(ctx context.Context, userID string, channelID string) (*model.Membership, error) {
+	return database.DB.GetUserMembership(userID, channelID)
+}
+
+// GetMembershipByID is the resolver for the getMembershipById field.
+func (r *queryResolver) GetMembershipByID(ctx context.Context, id string) (*model.Membership, error) {
+	return database.DB.GetMembershipById(id)
 }
 
 // GetMessages is the resolver for the getMessages field.
@@ -285,9 +353,24 @@ func (r *subscriptionResolver) GetVideoViewers(ctx context.Context, videoID stri
 	return events, nil
 }
 
-// GetSubs is the resolver for the getSubs field.
-func (r *subscriptionResolver) GetSubs(ctx context.Context, userID string) (<-chan *model.User, error) {
-	panic(fmt.Errorf("not implemented: GetSubs - getSubs"))
+// GetActivity is the resolver for the getActivity field.
+func (r *subscriptionResolver) GetActivity(ctx context.Context, channelID string) (<-chan *model.Activity, error) {
+	activity := r.getChannelActivity(channelID)
+
+	id := randString(8)
+	events := make(chan *model.Activity, 1)
+
+	go func() {
+		<-ctx.Done()
+		activity.Observers.Delete(id)
+	}()
+
+	activity.Observers.Store(id, &ActivityObserver{
+		ChannelID: channelID,
+		Activity:  events,
+	})
+
+	return events, nil
 }
 
 // Mutation returns MutationResolver implementation.

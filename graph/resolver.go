@@ -12,8 +12,9 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	Rooms   sync.Map
-	Viewers sync.Map
+	Rooms    sync.Map
+	Viewers  sync.Map
+	Activity sync.Map
 }
 
 type ChatResolver struct {
@@ -53,6 +54,23 @@ type VideoPage struct {
 	Observers sync.Map
 }
 
+type ActivityResolver struct {
+	ChannelID         string
+	Activity          *model.Activity
+	ActivityObservers sync.Map
+}
+
+type ActivityObserver struct {
+	ChannelID string
+	Activity  chan *model.Activity
+}
+
+type ActivityPage struct {
+	ChannelID string
+	Activity  *model.Activity
+	Observers sync.Map
+}
+
 func (r *Resolver) getRoom(channelID string) *Chatroom {
 	room, _ := r.Rooms.LoadOrStore(channelID, &Chatroom{
 		ChannelID: channelID,
@@ -68,6 +86,15 @@ func (r *Resolver) getVideoViewers(videoID string) *VideoPage {
 	})
 
 	return page.(*VideoPage)
+}
+
+func (r *Resolver) getChannelActivity(channelID string) *ActivityPage {
+	page, _ := r.Activity.LoadOrStore(channelID, &ActivityPage{
+		ChannelID: channelID,
+		Observers: sync.Map{},
+	})
+
+	return page.(*ActivityPage)
 }
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

@@ -8,10 +8,14 @@ import (
 
 type Activity struct {
 	ID        string    `json:"id"`
+	Sender    *User     `json:"sender"`
+	SenderID  string    `json:"sender_id"`
 	Target    *User     `json:"target"`
-	Entity    string    `json:"entity"`
+	TargetID  string    `json:"target_id"`
+	Type      string    `json:"type"`
 	Message   string    `json:"message"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ChatIdentity struct {
@@ -38,13 +42,24 @@ type Follower struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+type FollowersEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *User  `json:"node"`
+}
+
+type FollowersResult struct {
+	Edges    []*FollowersEdge `json:"edges"`
+	PageInfo *PageInfo        `json:"pageInfo"`
+}
+
 type Membership struct {
 	ID        string    `json:"id"`
-	Channel   *User     `json:"channel"`
-	User      *User     `json:"user"`
-	Gifter    *User     `json:"gifter"`
+	ChannelID string    `json:"channel_id"`
+	UserID    string    `json:"user_id"`
+	Gifter    string    `json:"gifter"`
 	IsGift    bool      `json:"is_gift"`
 	Tier      string    `json:"tier"`
+	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -92,6 +107,7 @@ type NewMembership struct {
 	UserID    string `json:"user_id"`
 	GifterID  string `json:"gifter_id"`
 	IsGift    bool   `json:"is_gift"`
+	IsActive  bool   `json:"is_active"`
 	Tier      string `json:"tier"`
 }
 
@@ -136,6 +152,23 @@ type PageInfo struct {
 	HasNextPage bool   `json:"hasNextPage"`
 }
 
+type Payment struct {
+	ID         string    `json:"id"`
+	SessionID  string    `json:"session_id"`
+	EntityID   string    `json:"entity_id"`
+	EntityType string    `json:"entity_type"`
+	Status     string    `json:"status"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type PaymentInput struct {
+	SessionID  string `json:"session_id"`
+	EntityID   string `json:"entity_id"`
+	EntityType string `json:"entity_type"`
+	Status     string `json:"status"`
+}
+
 type Query struct {
 }
 
@@ -167,22 +200,28 @@ type UpdateVideo struct {
 }
 
 type User struct {
-	ID               string        `json:"id"`
-	Email            string        `json:"email"`
-	Username         string        `json:"username"`
-	Name             string        `json:"name"`
-	Biography        string        `json:"biography"`
-	StripeCustomerID string        `json:"stripe_customer_id"`
-	IsActive         bool          `json:"is_active"`
-	IsVerified       bool          `json:"is_verified"`
-	Photo            string        `json:"photo"`
-	Cover            string        `json:"cover"`
-	Description      string        `json:"description"`
-	ChatIdentity     *ChatIdentity `json:"chat_identity"`
-	Links            []string      `json:"links"`
-	LastLogin        time.Time     `json:"last_login"`
-	CreatedAt        time.Time     `json:"created_at"`
-	UpdatedAt        time.Time     `json:"updated_at"`
+	ID                  string        `json:"id"`
+	Email               string        `json:"email"`
+	Username            string        `json:"username"`
+	Name                string        `json:"name"`
+	Biography           string        `json:"biography"`
+	StripeCustomerID    string        `json:"stripe_customer_id"`
+	StripeConnectedLink bool          `json:"stripe_connected_link"`
+	IsActive            bool          `json:"is_active"`
+	IsVerified          bool          `json:"is_verified"`
+	Photo               string        `json:"photo"`
+	Cover               string        `json:"cover"`
+	Description         string        `json:"description"`
+	ChatIdentity        *ChatIdentity `json:"chat_identity"`
+	Links               []string      `json:"links"`
+	LastLogin           time.Time     `json:"last_login"`
+	CreatedAt           time.Time     `json:"created_at"`
+	UpdatedAt           time.Time     `json:"updated_at"`
+}
+
+type UserStripeInput struct {
+	StripeCustomerID    string `json:"stripe_customer_id"`
+	StripeConnectedLink bool   `json:"stripe_connected_link"`
 }
 
 type UsersInChat struct {
@@ -208,6 +247,7 @@ type Video struct {
 	Media     string    `json:"media"`
 	JobID     string    `json:"job_id"`
 	Tier      int       `json:"tier"`
+	Views     int       `json:"views"`
 	IsPremium bool      `json:"isPremium"`
 	IsVisible bool      `json:"isVisible"`
 	CreatedAt time.Time `json:"created_at"`
