@@ -383,19 +383,22 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 	var user model.User
 
-	err := db.client.NewRaw("SELECT * FROM ? WHERE email = ?", bun.Ident("users"), email).Scan(context.Background())
+	err := db.client.NewRaw("SELECT * FROM ? WHERE email = ?", bun.Ident("users"), email).Scan(context.Background(), &user)
 
 	if err != nil {
-		fmt.Println("No user present...")
-		fmt.Println("Inserting new user...")
-		user, isRegistered := db.registerUser(email)
-		if isRegistered {
-			fmt.Println("Registered user successfully...")
+		if user.ID != "" {
+			fmt.Println("No user present...")
+			fmt.Println("Inserting new user...")
+			user, isRegistered := db.registerUser(email)
+			if isRegistered {
+				fmt.Println("Registered user successfully...")
+			}
+
+			result, err := db.createLoginToken(user)
+
+			return result, err
 		}
-
-		result, err := db.createLoginToken(user)
-
-		return result, err
+		return "", err
 	}
 
 	result, err := db.createLoginToken(&user)
