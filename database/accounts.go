@@ -383,7 +383,7 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 	var user model.User
 
-	err := db.client.NewSelect().Model(&user).Where("email = ?", email).Scan(context.Background())
+	err := db.client.NewRaw("SELECT * FROM ? WHERE email = ?", bun.Ident("users"), email).Scan(context.Background())
 
 	if err != nil {
 		fmt.Println("No user present...")
