@@ -226,7 +226,6 @@ type ComplexityRoot struct {
 		ID                  func(childComplexity int) int
 		IsActive            func(childComplexity int) int
 		IsVerified          func(childComplexity int) int
-		LastLogin           func(childComplexity int) int
 		Links               func(childComplexity int) int
 		Name                func(childComplexity int) int
 		Photo               func(childComplexity int) int
@@ -1507,13 +1506,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.IsVerified(childComplexity), true
-
-	case "User.last_login":
-		if e.complexity.User.LastLogin == nil {
-			break
-		}
-
-		return e.complexity.User.LastLogin(childComplexity), true
 
 	case "User.links":
 		if e.complexity.User.Links == nil {
@@ -3037,8 +3029,6 @@ func (ec *executionContext) fieldContext_Activity_sender(ctx context.Context, fi
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -3161,8 +3151,6 @@ func (ec *executionContext) fieldContext_Activity_target(ctx context.Context, fi
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -3857,8 +3845,6 @@ func (ec *executionContext) fieldContext_FollowersEdge_node(ctx context.Context,
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -4961,8 +4947,6 @@ func (ec *executionContext) fieldContext_Message_sender(ctx context.Context, fie
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -5693,8 +5677,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteUser(ctx context.Context
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -7920,8 +7902,6 @@ func (ec *executionContext) fieldContext_Query_getUserByUsername(ctx context.Con
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -8011,8 +7991,6 @@ func (ec *executionContext) fieldContext_Query_getUserByEmail(ctx context.Contex
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -8122,8 +8100,6 @@ func (ec *executionContext) fieldContext_Query_getUserById(ctx context.Context, 
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -8233,8 +8209,6 @@ func (ec *executionContext) fieldContext_Query_searchUsers(ctx context.Context, 
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -9437,8 +9411,6 @@ func (ec *executionContext) fieldContext_Query_getUsersInChat(ctx context.Contex
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -10883,50 +10855,6 @@ func (ec *executionContext) fieldContext_User_links(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _User_last_login(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_last_login(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.LastLogin, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(time.Time)
-	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_last_login(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_created_at(ctx, field)
 	if err != nil {
@@ -11214,8 +11142,6 @@ func (ec *executionContext) fieldContext_UsersInChat_user(ctx context.Context, f
 				return ec.fieldContext_User_chat_identity(ctx, field)
 			case "links":
 				return ec.fieldContext_User_links(ctx, field)
-			case "last_login":
-				return ec.fieldContext_User_last_login(ctx, field)
 			case "created_at":
 				return ec.fieldContext_User_created_at(ctx, field)
 			case "updated_at":
@@ -16260,11 +16186,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "links":
 			out.Values[i] = ec._User_links(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "last_login":
-			out.Values[i] = ec._User_last_login(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

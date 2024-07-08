@@ -214,7 +214,6 @@ type User struct {
 	Description         string        `json:"description"`
 	ChatIdentity        *ChatIdentity `json:"chat_identity"`
 	Links               []string      `json:"links"`
-	LastLogin           time.Time     `json:"last_login"`
 	CreatedAt           time.Time     `json:"created_at"`
 	UpdatedAt           time.Time     `json:"updated_at"`
 }
