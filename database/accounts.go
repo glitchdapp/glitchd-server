@@ -386,8 +386,8 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 	err := db.client.NewRaw("SELECT * FROM ? WHERE email = ?", bun.Ident("users"), email).Scan(context.Background(), &user)
 
 	if err != nil {
-		if user.ID != "" {
-			fmt.Println("No user present...")
+		if user.ID == "" {
+			fmt.Println("No user present...", err)
 			fmt.Println("Inserting new user...")
 			user, isRegistered := db.registerUser(email)
 			if isRegistered {
@@ -398,12 +398,11 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 			return result, err
 		}
-		return "", err
+		result, err := db.createLoginToken(&user)
+		return result, err
 	}
 
-	result, err := db.createLoginToken(&user)
-
-	return result, err
+	return "", err
 }
 
 func JwtGenerate(ctx context.Context, userID string, email string) (string, error) {
