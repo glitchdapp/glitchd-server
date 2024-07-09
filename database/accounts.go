@@ -389,6 +389,18 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 	if err != nil {
 		fmt.Println("Login account error: ", err)
+		if err.Error() == "sql: no rows in result set" {
+			fmt.Println("No user present...", err)
+			fmt.Println("Inserting new user...")
+			user, isRegistered := db.registerUser(email)
+			if isRegistered {
+				fmt.Println("Registered user successfully...")
+			}
+
+			result, err := db.createLoginToken(user)
+
+			return result, err
+		}
 		return "", err
 	}
 
