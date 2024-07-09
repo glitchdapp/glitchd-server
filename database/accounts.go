@@ -271,6 +271,12 @@ func (db *BUN) GetUser(id string) (*model.User, error) {
 	chat_identity, err := db.GetChatIdentity(result.ID)
 	if err != nil {
 		fmt.Println("Could not load chat identity something went wrong. ", err)
+		// update chat identity.
+		input := model.ChatIdentityInput{
+			Color: "#FF0000",
+			Badge: "",
+		}
+		db.UpdateChatIdentity(result.ID, input)
 	}
 
 	result.ChatIdentity = chat_identity
@@ -404,6 +410,7 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 		return "", err
 	}
 
+	// chance of errors not going through.
 	if user.ID == "" {
 		fmt.Println("No user present...", err)
 		fmt.Println("Inserting new user...")
