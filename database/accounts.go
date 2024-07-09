@@ -385,24 +385,29 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 	err := db.client.NewRaw("SELECT * FROM ? WHERE email = ?", bun.Ident("users"), email).Scan(context.Background(), &user)
 
+	fmt.Println("Login possible error: ", err)
+
 	if err != nil {
-		if user.ID == "" {
-			fmt.Println("No user present...", err)
-			fmt.Println("Inserting new user...")
-			user, isRegistered := db.registerUser(email)
-			if isRegistered {
-				fmt.Println("Registered user successfully...")
-			}
+		fmt.Println("Login account error: ", err)
+		return "", err
+	}
 
-			result, err := db.createLoginToken(user)
-
-			return result, err
+	if user.ID == "" {
+		fmt.Println("No user present...", err)
+		fmt.Println("Inserting new user...")
+		user, isRegistered := db.registerUser(email)
+		if isRegistered {
+			fmt.Println("Registered user successfully...")
 		}
-		result, err := db.createLoginToken(&user)
+
+		result, err := db.createLoginToken(user)
+
 		return result, err
 	}
 
-	return "", err
+	// login instead
+	result, err := db.createLoginToken(&user)
+	return result, err
 }
 
 func JwtGenerate(ctx context.Context, userID string, email string) (string, error) {
@@ -447,14 +452,14 @@ func (db *BUN) VerifyToken(id string, token string) (string, error) {
 	}
 
 	if count > 0 {
-		count, err := db.client.NewSelect().Model(&user).Where("id = ?", id).ScanAndCount(context.Background())
+		err := db.client.NewRaw("select * from ? where id = ?", bun.Ident("users"), id).Scan(context.Background(), &user)
 
 		if err != nil {
 			fmt.Println("Could not fetch user: ", err)
 			return "No User", err
 		}
 
-		if count > 0 {
+		if user.ID != "" {
 			jwtString, err := JwtGenerate(context.Background(), user.ID, user.Email)
 
 			if err == nil {
