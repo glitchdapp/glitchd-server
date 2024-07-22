@@ -28,6 +28,61 @@ func (db *BUN) CreateVideo(input model.NewVideo) (bool, error) {
 
 	return true, nil
 }
+func (db *BUN) CreateChannelViewer(input model.ChannelViewerInput) (int, error) {
+
+	var now = time.Now()
+	id := uuid.New().String()
+
+	_, err := db.client.NewRaw(
+		"INSERT INTO ? (id, channel_id, user_id, created_at) VALUES (?, ?, ?, ?)",
+		bun.Ident("video_views"), id, input.ChannelID, input.UserID, now,
+	).Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Error found when inserting Channel view: ", err)
+		return 0, err
+	}
+
+	count, _ := db.GetChannelViewers(input.ChannelID)
+
+	return count, nil
+}
+
+func (db *BUN) DeleteChannelView(user_id string) (bool, error) {
+	var channel_view model.ChannelViewer
+
+	row, err := db.client.NewDelete().Model(&channel_view).Where("user_id = ?", user_id).Returning("*").Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not delete channel view: ", err)
+		return false, err
+	}
+
+	rows, err := row.RowsAffected()
+
+	if err != nil {
+		fmt.Println("Could not fetch rows in delete channel views: ", err)
+		return false, err
+	}
+
+	if rows > 0 {
+		return true, nil
+	}
+
+	return false, nil
+
+}
+
+func (db *BUN) GetChannelViewers(channel_id string) (int, error) {
+	var channel_viewer model.ChannelViewer
+	count, err := db.client.NewSelect().Model(&channel_viewer).Where("channel_id = ?", channel_id).Count(context.Background())
+	if err != nil {
+		fmt.Println("Could not get channel views: ", err)
+		return 0, err
+	}
+
+	return count, nil
+}
 
 func (db *BUN) CreateVideoView(input model.NewVideoView) (int, error) {
 

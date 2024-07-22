@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/glitchd/glitchd-server/graph/model"
@@ -20,14 +19,12 @@ func (db *BUN) CreateActivity(sender_id string, target_id string, activity_type 
 	).Exec(context.Background())
 
 	if err != nil {
-		fmt.Println("Could not create activity details. Error: ", err)
 		return nil, err
 	}
 
 	rows, err := res.RowsAffected()
 
 	if err != nil {
-		fmt.Println("Could not retreive rows affected by activity", err)
 		return nil, err
 	}
 
@@ -45,7 +42,6 @@ func (db *BUN) GetActivity(id string) (*model.Activity, error) {
 	err := db.client.NewRaw("SELECT * FROM activities WHERE id = ?", id).Scan(context.Background(), &result)
 
 	if err != nil {
-		fmt.Print("\n Error found when querying for users with id: ", err)
 		return nil, err
 	}
 
@@ -66,7 +62,6 @@ func (db *BUN) GetRecentAcivity(channelID string) ([]*model.Activity, error) {
 	}
 
 	if err != nil {
-		fmt.Println("Could not recent Activity: ", err)
 		return nil, err
 	}
 	return activity, nil

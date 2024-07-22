@@ -51,6 +51,16 @@ func (r *mutationResolver) VerifyEmail(ctx context.Context, id string, email str
 	return database.DB.VerifyEmail(id, email)
 }
 
+// CreateChannel is the resolver for the createChannel field.
+func (r *mutationResolver) CreateChannel(ctx context.Context, userID string, input model.ChannelInput) (bool, error) {
+	return database.DB.CreateChannel(userID, input)
+}
+
+// UpdateStreamKey is the resolver for the updateStreamKey field.
+func (r *mutationResolver) UpdateStreamKey(ctx context.Context, userID string, streamkey string, playbackID string) (bool, error) {
+	return database.DB.UpdateStreamkey(userID, streamkey, playbackID)
+}
+
 // PostMessage is the resolver for the postMessage field.
 func (r *mutationResolver) PostMessage(ctx context.Context, input *model.NewMessage) (*model.Message, error) {
 	room := r.getRoom(input.ChannelID)
@@ -218,6 +228,11 @@ func (r *queryResolver) GetUserByID(ctx context.Context, id string) (*model.User
 	return database.DB.GetUser(id)
 }
 
+// GetRecommendedUsers is the resolver for the getRecommendedUsers field.
+func (r *queryResolver) GetRecommendedUsers(ctx context.Context, limit int) ([]*model.User, error) {
+	return database.DB.GetAccounts(limit)
+}
+
 // SearchUsers is the resolver for the searchUsers field.
 func (r *queryResolver) SearchUsers(ctx context.Context, query string) ([]*model.User, error) {
 	return database.DB.SearchUsers(query)
@@ -311,6 +326,11 @@ func (r *queryResolver) GetUserMembership(ctx context.Context, userID string, ch
 // GetMembershipByID is the resolver for the getMembershipById field.
 func (r *queryResolver) GetMembershipByID(ctx context.Context, id string) (*model.Membership, error) {
 	return database.DB.GetMembershipById(id)
+}
+
+// GetChannelInfo is the resolver for the getChannelInfo field.
+func (r *queryResolver) GetChannelInfo(ctx context.Context, userID string) (*model.Channel, error) {
+	return database.DB.GetChannelInfo(userID)
 }
 
 // GetMessages is the resolver for the getMessages field.

@@ -58,6 +58,29 @@ type Token {
     created_at: Time
 }
 
+type Channel {
+    id: UUID!
+    broadcaster: User!
+    title: String!
+    category: String!
+    streamkey: String!
+    playback_id: String!
+    tags: [String!]!
+    is_branded: Boolean!
+    created_at: Time!
+    updated_at: Time!
+}
+
+input ChannelInput {
+    broadcaster_id: String!
+    title: String!
+    category: String!
+    streamkey: String!
+    playback_id: String!
+    tags: [String!]!
+    is_branded: Boolean!
+}
+
 type Video {
     id: UUID!
     channel_id: String!
@@ -114,6 +137,18 @@ input UpdateVideo {
     media: String!
     tier: Int!
     isVisible: Boolean!
+}
+
+type ChannelViewer {
+    id: UUID!
+    channel_id: String!
+    user_id: String!
+    created_at: Time!
+}
+
+input ChannelViewerInput {
+    channel_id: String!
+    user_id: String!
 }
 
 type Message {
@@ -275,47 +310,37 @@ type Query {
     # Get Users
     getUserByUsername(username: String!): User!
     getUserByEmail(email: String!): User!
-    getUserById(id: String!): User! @auth
-    searchUsers(query: String!): [User!]! @auth
+    getUserById(id: String!): User!
+    getRecommendedUsers(limit: Int!): [User!]!
+    searchUsers(query: String!): [User!]!
 
     # Get Videos
     getVideos(channel_id: String!, first: Int!, after: String!): VideosResult
-        @auth
     getAllVideos(first: Int!, after: String!): VideosResult
-    getVideosByCategory(
-        category: String!
-        first: Int!
-        after: String!
-    ): VideosResult
-    getVideoById(id: String!): Video! @auth
-    getVideoViews(video_id: String!): Int! @auth
-    getChannelViews(channel_id: String!): Int! @auth
-    countChannelVideos(channel_id: String!): Int! @auth
+    getVideosByCategory(category: String!, first: Int!, after: String!): VideosResult
+    getVideoById(id: String!): Video!
+    getVideoViews(video_id: String!): Int!
+    getChannelViews(channel_id: String!): Int!
+    countChannelVideos(channel_id: String!): Int!
 
     # Handle Connections
-    getFollowers(
-        user_id: String!
-        first: Int!
-        after: String!
-    ): FollowersResult @auth
-    getFollowing(
-        follower_id: String!
-        first: Int!
-        after: String!
-    ): FollowersResult @auth
-    countFollowers(user_id: String!): Int! @auth
-    isFollowing(user_id: String!): Boolean! @auth
-    countFollowing(follower_id: String!): Int! @auth
+    getFollowers(user_id: String!, first: Int!, after: String!): FollowersResult
+    getFollowing(follower_id: String!, first: Int!, after: String!): FollowersResult
+    countFollowers(user_id: String!): Int!
+    isFollowing(user_id: String!): Boolean!
+    countFollowing(follower_id: String!): Int!
 
     # Get Channel Info
-    getRecentMessages(channel_id: String!): [Message!]! @auth
+    getRecentMessages(channel_id: String!): [Message!]!
     getChatIdentity(user_id: String!): ChatIdentity! @auth
-    getUsersInChat(channel_id: String!): [User!]! @auth
+    getUsersInChat(channel_id: String!): [User!]!
 
     getPaymentBySession(session_id: String!): Payment!
 
     getUserMembership(user_id: String!, channel_id: String!): Membership! @auth
-    getMembershipById(id: String!): Membership!
+    getMembershipById(id: String!): Membership! @auth
+
+    getChannelInfo(user_id: String!): Channel! @auth
 }
 
 type Mutation {
@@ -331,6 +356,10 @@ type Mutation {
     verifyToken(id: String!, token: String!): String!
     verifyEmail(id: String!, email: String!): Boolean!
 
+    # Manage Stream
+    createChannel(user_id: String!, input: ChannelInput!): Boolean! @auth
+    updateStreamKey(user_id: String!, streamkey: String!, playback_id: String!): Boolean! @auth
+
     # Send Chat Messages
     postMessage(input: NewMessage): Message! @auth
 
@@ -345,8 +374,7 @@ type Mutation {
     removeFollower(user_id: String!, follower_id: String!): Boolean! @auth
 
     # Manage Chat identity
-    updateChatIdentity(user_id: String!, input: ChatIdentityInput!): Boolean!
-        @auth
+    updateChatIdentity(user_id: String!, input: ChatIdentityInput!): Boolean! @auth
     addUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
     removeUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
 

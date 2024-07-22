@@ -83,7 +83,6 @@ func (db *BUN) registerUser(email string) (*model.User, bool) {
 	}
 
 	if row > 0 {
-		fmt.Println("Created User successfully")
 		return &data, true
 	}
 
@@ -112,7 +111,6 @@ func (db *BUN) CreateUsers(input *model.NewUser) (*model.User, error) {
 	}
 
 	if row > 0 {
-		fmt.Println("Created User successfully")
 		return &data, nil
 	}
 
