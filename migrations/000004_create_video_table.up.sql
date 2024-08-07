@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS video_views (
     created_at timestamp NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS live_viewers (
+CREATE TABLE IF NOT EXISTS channel_viewers (
     id UUID NOT NULL,
     channel_id TEXT NOT NULL,
     user_id TEXT NOT NULL,

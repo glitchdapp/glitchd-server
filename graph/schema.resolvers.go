@@ -6,6 +6,8 @@ package graph
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/glitchd/glitchd-server/database"
 	"github.com/glitchd/glitchd-server/graph/model"
@@ -56,6 +58,27 @@ func (r *mutationResolver) CreateChannel(ctx context.Context, userID string, inp
 	return database.DB.CreateChannel(userID, input)
 }
 
+// CreateChannelViewer is the resolver for the createChannelViewer field.
+func (r *mutationResolver) CreateChannelViewer(ctx context.Context, channelID string, userID string) (int, error) {
+	viewer := r.getChannelViewers(channelID)
+
+	viewer.Count = viewer.Count + 1
+
+	res, err := database.DB.CreateChannelViewer(channelID, userID)
+
+	// Notify all active subscriptions that a new message has been posted by posted. In this case we push the now
+	// updated ChatMessages to all clients that care about it.
+	viewer.Observers.Range(func(_, v any) bool {
+		observer := v.(*ChannelObserver)
+
+		if observer.ChannelID == channelID {
+			observer.Count <- 1
+		}
+		return true
+	})
+	return res, err
+}
+
 // UpdateStreamKey is the resolver for the updateStreamKey field.
 func (r *mutationResolver) UpdateStreamKey(ctx context.Context, userID string, streamkey string, playbackID string) (bool, error) {
 	return database.DB.UpdateStreamkey(userID, streamkey, playbackID)
@@ -63,9 +86,46 @@ func (r *mutationResolver) UpdateStreamKey(ctx context.Context, userID string, s
 
 // PostMessage is the resolver for the postMessage field.
 func (r *mutationResolver) PostMessage(ctx context.Context, input *model.NewMessage) (*model.Message, error) {
+	activity := r.getChannelActivity(input.ChannelID)
 	room := r.getRoom(input.ChannelID)
 
 	msg, err := database.DB.CreateMessage(input)
+
+	if input.MessageType == "flakes" {
+		isSent, err := database.DB.SendFlakes(input.ChannelID, input.SenderID, input.Amount)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if !isSent {
+			return nil, nil
+		}
+
+		if isSent {
+			amount := strconv.Itoa(input.Amount)
+
+			act, _ := database.DB.CreateActivity(input.SenderID, input.ChannelID, "flakes", "Sent you "+amount+" Flakes")
+
+			sender, _ := database.DB.GetUser(act.SenderID)
+			target, _ := database.DB.GetUser(act.TargetID)
+
+			act.Sender = sender
+			act.Target = target
+
+			// Notify all active subscriptions that a new message has been posted by posted. In this case we push the now
+			// updated ChatMessages to all clients that care about it.
+			activity.Observers.Range(func(_, v any) bool {
+				observer := v.(*ActivityObserver)
+
+				if observer.ChannelID == activity.ChannelID {
+					observer.Activity <- act
+				}
+				return true
+			})
+
+		}
+	}
 
 	// append only the latest message if the channel id matches.
 	room.Message = msg
@@ -127,6 +187,12 @@ func (r *mutationResolver) FollowUser(ctx context.Context, input model.FollowInp
 
 	act, _ := database.DB.CreateActivity(input.FollowerID, input.UserID, "follow", "Followed you")
 
+	sender, _ := database.DB.GetUser(act.SenderID)
+	target, _ := database.DB.GetUser(act.TargetID)
+
+	act.Sender = sender
+	act.Target = target
+
 	// Notify all active subscriptions that a new message has been posted by posted. In this case we push the now
 	// updated ChatMessages to all clients that care about it.
 	activity.Observers.Range(func(_, v any) bool {
@@ -167,8 +233,8 @@ func (r *mutationResolver) CreatePayment(ctx context.Context, input model.Paymen
 }
 
 // UpdatePayment is the resolver for the updatePayment field.
-func (r *mutationResolver) UpdatePayment(ctx context.Context, sessionID string, input model.PaymentInput) (bool, error) {
-	return database.DB.UpdatePayment(sessionID, input)
+func (r *mutationResolver) UpdatePayment(ctx context.Context, input model.PaymentInput) (bool, error) {
+	return database.DB.UpdatePayment(input)
 }
 
 // CreateMembershipDetails is the resolver for the createMembershipDetails field.
@@ -183,6 +249,12 @@ func (r *mutationResolver) CreateMembership(ctx context.Context, input model.New
 	res, err := database.DB.CreateMembership(input)
 
 	act, _ := database.DB.CreateActivity(input.UserID, input.ChannelID, "subscription", "Subscribed to Tier "+input.Tier)
+
+	sender, _ := database.DB.GetUser(act.SenderID)
+	target, _ := database.DB.GetUser(act.TargetID)
+
+	act.Sender = sender
+	act.Target = target
 
 	// Notify all active subscriptions that a new message has been posted by posted. In this case we push the now
 	// updated ChatMessages to all clients that care about it.
@@ -211,6 +283,11 @@ func (r *mutationResolver) UpdateMembershipStatus(ctx context.Context, id string
 // DeleteMembership is the resolver for the deleteMembership field.
 func (r *mutationResolver) DeleteMembership(ctx context.Context, id string) (bool, error) {
 	return database.DB.DeleteMembership(id)
+}
+
+// AddFlakes is the resolver for the addFlakes field.
+func (r *mutationResolver) AddFlakes(ctx context.Context, userID string, amount int) (bool, error) {
+	return database.DB.AddFlakes(userID, amount)
 }
 
 // GetUserByUsername is the resolver for the getUserByUsername field.
@@ -273,6 +350,11 @@ func (r *queryResolver) CountChannelVideos(ctx context.Context, channelID string
 	return database.DB.CountChannelVideos(channelID)
 }
 
+// SearchVideos is the resolver for the searchVideos field.
+func (r *queryResolver) SearchVideos(ctx context.Context, query string, first int, after string) (*model.VideosResult, error) {
+	return database.DB.SearchVideos(query, first, after)
+}
+
 // GetFollowers is the resolver for the getFollowers field.
 func (r *queryResolver) GetFollowers(ctx context.Context, userID string, first int, after string) (*model.FollowersResult, error) {
 	return database.DB.GetFollowers(userID, first, after)
@@ -313,6 +395,11 @@ func (r *queryResolver) GetUsersInChat(ctx context.Context, channelID string) ([
 	return database.DB.GetUsersInChat(channelID)
 }
 
+// GetRecentActivity is the resolver for the getRecentActivity field.
+func (r *queryResolver) GetRecentActivity(ctx context.Context, channelID string) ([]*model.Activity, error) {
+	return database.DB.GetRecentActivity(channelID)
+}
+
 // GetPaymentBySession is the resolver for the getPaymentBySession field.
 func (r *queryResolver) GetPaymentBySession(ctx context.Context, sessionID string) (*model.Payment, error) {
 	return database.DB.GetPaymentBySession(sessionID)
@@ -328,21 +415,39 @@ func (r *queryResolver) GetMembershipByID(ctx context.Context, id string) (*mode
 	return database.DB.GetMembershipById(id)
 }
 
+// GetChannelMemberships is the resolver for the getChannelMemberships field.
+func (r *queryResolver) GetChannelMemberships(ctx context.Context, channelID string) ([]*model.Membership, error) {
+	return database.DB.GetChannelMemberships(channelID)
+}
+
 // GetChannelInfo is the resolver for the getChannelInfo field.
 func (r *queryResolver) GetChannelInfo(ctx context.Context, userID string) (*model.Channel, error) {
 	return database.DB.GetChannelInfo(userID)
 }
 
+// GetFlakes is the resolver for the getFlakes field.
+func (r *queryResolver) GetFlakes(ctx context.Context, userID string) (int, error) {
+	return database.DB.GetFlakes(userID)
+}
+
+// GetChannelFlakes is the resolver for the getChannelFlakes field.
+func (r *queryResolver) GetChannelFlakes(ctx context.Context, channelID string) ([]*model.ChannelFlakes, error) {
+	return database.DB.GetChannelFlakes(channelID)
+}
+
 // GetMessages is the resolver for the getMessages field.
-func (r *subscriptionResolver) GetMessages(ctx context.Context, channelID string) (<-chan *model.Message, error) {
+func (r *subscriptionResolver) GetMessages(ctx context.Context, channelID string, userID string) (<-chan *model.Message, error) {
 	room := r.getRoom(channelID)
 
 	id := randString(8)
 	events := make(chan *model.Message, 1)
 
+	database.DB.AddUserInChat(channelID, userID)
+
 	go func() {
 		<-ctx.Done()
 		room.Observers.Delete(id)
+		database.DB.DeleteUserInChat(channelID, userID)
 	}()
 
 	room.Observers.Store(id, &Observer{
@@ -368,6 +473,31 @@ func (r *subscriptionResolver) GetVideoViewers(ctx context.Context, videoID stri
 	viewer.Observers.Store(id, &VideoObserver{
 		VideoID: videoID,
 		Count:   events,
+	})
+
+	return events, nil
+}
+
+// GetChannelViewers is the resolver for the getChannelViewers field.
+func (r *subscriptionResolver) GetChannelViewers(ctx context.Context, channelID string, userID string) (<-chan int, error) {
+	viewer := r.getChannelViewers(channelID)
+
+	id := randString(8)
+	events := make(chan int, 1)
+
+	fmt.Println("Live Viewer Detected")
+
+	go func() {
+		<-ctx.Done()
+		viewer.Observers.Delete(id)
+		database.DB.DeleteChannelView(channelID, userID)
+		// TODO: Remove delete channel viewer endpoint since this takes care of it.
+		fmt.Println("Removed Channel Viewer")
+	}()
+
+	viewer.Observers.Store(id, &ChannelObserver{
+		ChannelID: channelID,
+		Count:     events,
 	})
 
 	return events, nil
@@ -405,3 +535,13 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *mutationResolver) SendFlakes(ctx context.Context, channelID string, userID string, amount int, message string) (bool, error) {
+	return database.DB.SendFlakes(channelID, userID, amount)
+}

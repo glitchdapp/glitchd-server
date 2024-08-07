@@ -33,7 +33,7 @@ func Connect() *BUN {
 		panic(err)
 	}
 	conn := bun.NewDB(client, pgdialect.New())
-	fmt.Println("Established a successful db connection!")
+	fmt.Println("Established Database Connection Successfully!")
 
 	return &BUN{client: conn}
 }

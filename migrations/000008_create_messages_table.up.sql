@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS messages (
     is_sent BOOLEAN DEFAULT true,
     message TEXT NOT NULL,
     message_type TEXT NOT NULL,
+    amount Integer NOT NULL DEFAULT 0,
     drop_code TEXT NOT NULL,
     drop_message TEXT NOT NULL,
     reply_parent_message_id TEXT NOT NULL,

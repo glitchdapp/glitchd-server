@@ -232,7 +232,6 @@ func (db *BUN) IsFollowing(user_id string) (bool, error) {
 	count, err := db.client.NewSelect().Model(&follower).Where("user_id = ?", user_id).ScanAndCount(context.Background())
 
 	if err != nil {
-		fmt.Println("Could not check if user is following: ", err)
 		return false, nil
 	}
 

@@ -28,13 +28,14 @@ func (db *BUN) CreateMessage(input *model.NewMessage) (*model.Message, error) {
 	message.IsSent = input.IsSent
 	message.Message = input.Message
 	message.MessageType = input.MessageType
+	message.Amount = input.Amount
 	message.ReplyParentMessageID = input.ReplyParentMessageID
 	message.CreatedAt = now
 	message.UpdatedAt = now
 
 	res, err := db.client.NewRaw(
-		"INSERT INTO ? (id, sender_id, channel_id, is_sent, message, message_type, drop_code, drop_message, reply_parent_message_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		bun.Ident("messages"), id, input.SenderID, input.ChannelID, input.IsSent, input.Message, input.MessageType, "", "", input.ReplyParentMessageID,
+		"INSERT INTO ? (id, sender_id, channel_id, is_sent, message, message_type, amount, drop_code, drop_message, reply_parent_message_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		bun.Ident("messages"), id, input.SenderID, input.ChannelID, input.IsSent, input.Message, input.MessageType, input.Amount, "", "", input.ReplyParentMessageID,
 	).Exec(context.Background())
 
 	if err != nil {

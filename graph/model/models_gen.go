@@ -31,12 +31,21 @@ type Channel struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+type ChannelFlakes struct {
+	ID        string    `json:"id"`
+	ChannelID string    `json:"channel_id"`
+	SenderID  string    `json:"sender_id"`
+	Amount    int       `json:"amount"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type ChannelInput struct {
 	BroadcasterID string   `json:"broadcaster_id"`
 	Title         string   `json:"title"`
 	Category      string   `json:"category"`
 	Streamkey     string   `json:"streamkey"`
 	PlaybackID    string   `json:"playback_id"`
+	Viewers       string   `json:"viewers"`
 	Tags          []string `json:"tags"`
 	IsBranded     bool     `json:"is_branded"`
 }
@@ -63,6 +72,13 @@ type ChatIdentity struct {
 type ChatIdentityInput struct {
 	Color string `json:"color"`
 	Badge string `json:"badge"`
+}
+
+type Flakes struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	Amount    int       `json:"amount"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type FollowInput struct {
@@ -127,6 +143,7 @@ type Message struct {
 	IsSent               bool      `json:"is_sent"`
 	Message              string    `json:"message"`
 	MessageType          string    `json:"message_type"`
+	Amount               int       `json:"amount"`
 	DropCode             string    `json:"drop_code"`
 	DropMessage          string    `json:"drop_message"`
 	ReplyParentMessageID string    `json:"reply_parent_message_id"`
@@ -151,6 +168,7 @@ type NewMessage struct {
 	SenderID             string `json:"sender_id"`
 	Message              string `json:"message"`
 	MessageType          string `json:"message_type"`
+	Amount               int    `json:"amount"`
 	IsSent               bool   `json:"is_sent"`
 	ReplyParentMessageID string `json:"reply_parent_message_id"`
 }
@@ -188,20 +206,18 @@ type PageInfo struct {
 }
 
 type Payment struct {
-	ID         string    `json:"id"`
-	SessionID  string    `json:"session_id"`
-	EntityID   string    `json:"entity_id"`
-	EntityType string    `json:"entity_type"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	OrderID   string    `json:"order_id"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type PaymentInput struct {
-	SessionID  string `json:"session_id"`
-	EntityID   string `json:"entity_id"`
-	EntityType string `json:"entity_type"`
-	Status     string `json:"status"`
+	UserID  string `json:"user_id"`
+	OrderID string `json:"order_id"`
+	Status  string `json:"status"`
 }
 
 type Query struct {

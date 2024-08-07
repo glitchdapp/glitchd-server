@@ -76,6 +76,14 @@ type ComplexityRoot struct {
 		UpdatedAt   func(childComplexity int) int
 	}
 
+	ChannelFlakes struct {
+		Amount    func(childComplexity int) int
+		ChannelID func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		SenderID  func(childComplexity int) int
+	}
+
 	ChannelViewer struct {
 		ChannelID func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
@@ -88,6 +96,13 @@ type ComplexityRoot struct {
 		Color  func(childComplexity int) int
 		ID     func(childComplexity int) int
 		UserID func(childComplexity int) int
+	}
+
+	Flakes struct {
+		Amount    func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		UserID    func(childComplexity int) int
 	}
 
 	Follower struct {
@@ -132,6 +147,7 @@ type ComplexityRoot struct {
 	}
 
 	Message struct {
+		Amount               func(childComplexity int) int
 		ChannelID            func(childComplexity int) int
 		CreatedAt            func(childComplexity int) int
 		DropCode             func(childComplexity int) int
@@ -147,8 +163,10 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		AddFlakes               func(childComplexity int, userID string, amount int) int
 		AddUserInChat           func(childComplexity int, channelID string, userID string) int
 		CreateChannel           func(childComplexity int, userID string, input model.ChannelInput) int
+		CreateChannelViewer     func(childComplexity int, channelID string, userID string) int
 		CreateMembership        func(childComplexity int, input model.NewMembership) int
 		CreateMembershipDetails func(childComplexity int, input model.MembershipDetailsInput) int
 		CreatePayment           func(childComplexity int, input model.PaymentInput) int
@@ -165,7 +183,7 @@ type ComplexityRoot struct {
 		UpdateChatIdentity      func(childComplexity int, userID string, input model.ChatIdentityInput) int
 		UpdateMembership        func(childComplexity int, id string, input model.NewMembership) int
 		UpdateMembershipStatus  func(childComplexity int, id string, isActive bool) int
-		UpdatePayment           func(childComplexity int, sessionID string, input model.PaymentInput) int
+		UpdatePayment           func(childComplexity int, input model.PaymentInput) int
 		UpdateStreamKey         func(childComplexity int, userID string, streamkey string, playbackID string) int
 		UpdateUser              func(childComplexity int, id string, input *model.UpdateUser) int
 		UpdateUserCoverPhoto    func(childComplexity int, id string, photo string) int
@@ -191,46 +209,51 @@ type ComplexityRoot struct {
 	}
 
 	Payment struct {
-		CreatedAt  func(childComplexity int) int
-		EntityID   func(childComplexity int) int
-		EntityType func(childComplexity int) int
-		ID         func(childComplexity int) int
-		SessionID  func(childComplexity int) int
-		Status     func(childComplexity int) int
-		UpdatedAt  func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		OrderID   func(childComplexity int) int
+		Status    func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+		UserID    func(childComplexity int) int
 	}
 
 	Query struct {
-		CountChannelVideos  func(childComplexity int, channelID string) int
-		CountFollowers      func(childComplexity int, userID string) int
-		CountFollowing      func(childComplexity int, followerID string) int
-		GetAllVideos        func(childComplexity int, first int, after string) int
-		GetChannelInfo      func(childComplexity int, userID string) int
-		GetChannelViews     func(childComplexity int, channelID string) int
-		GetChatIdentity     func(childComplexity int, userID string) int
-		GetFollowers        func(childComplexity int, userID string, first int, after string) int
-		GetFollowing        func(childComplexity int, followerID string, first int, after string) int
-		GetMembershipByID   func(childComplexity int, id string) int
-		GetPaymentBySession func(childComplexity int, sessionID string) int
-		GetRecentMessages   func(childComplexity int, channelID string) int
-		GetRecommendedUsers func(childComplexity int, limit int) int
-		GetUserByEmail      func(childComplexity int, email string) int
-		GetUserByID         func(childComplexity int, id string) int
-		GetUserByUsername   func(childComplexity int, username string) int
-		GetUserMembership   func(childComplexity int, userID string, channelID string) int
-		GetUsersInChat      func(childComplexity int, channelID string) int
-		GetVideoByID        func(childComplexity int, id string) int
-		GetVideoViews       func(childComplexity int, videoID string) int
-		GetVideos           func(childComplexity int, channelID string, first int, after string) int
-		GetVideosByCategory func(childComplexity int, category string, first int, after string) int
-		IsFollowing         func(childComplexity int, userID string) int
-		SearchUsers         func(childComplexity int, query string) int
+		CountChannelVideos    func(childComplexity int, channelID string) int
+		CountFollowers        func(childComplexity int, userID string) int
+		CountFollowing        func(childComplexity int, followerID string) int
+		GetAllVideos          func(childComplexity int, first int, after string) int
+		GetChannelFlakes      func(childComplexity int, channelID string) int
+		GetChannelInfo        func(childComplexity int, userID string) int
+		GetChannelMemberships func(childComplexity int, channelID string) int
+		GetChannelViews       func(childComplexity int, channelID string) int
+		GetChatIdentity       func(childComplexity int, userID string) int
+		GetFlakes             func(childComplexity int, userID string) int
+		GetFollowers          func(childComplexity int, userID string, first int, after string) int
+		GetFollowing          func(childComplexity int, followerID string, first int, after string) int
+		GetMembershipByID     func(childComplexity int, id string) int
+		GetPaymentBySession   func(childComplexity int, sessionID string) int
+		GetRecentActivity     func(childComplexity int, channelID string) int
+		GetRecentMessages     func(childComplexity int, channelID string) int
+		GetRecommendedUsers   func(childComplexity int, limit int) int
+		GetUserByEmail        func(childComplexity int, email string) int
+		GetUserByID           func(childComplexity int, id string) int
+		GetUserByUsername     func(childComplexity int, username string) int
+		GetUserMembership     func(childComplexity int, userID string, channelID string) int
+		GetUsersInChat        func(childComplexity int, channelID string) int
+		GetVideoByID          func(childComplexity int, id string) int
+		GetVideoViews         func(childComplexity int, videoID string) int
+		GetVideos             func(childComplexity int, channelID string, first int, after string) int
+		GetVideosByCategory   func(childComplexity int, category string, first int, after string) int
+		IsFollowing           func(childComplexity int, userID string) int
+		SearchUsers           func(childComplexity int, query string) int
+		SearchVideos          func(childComplexity int, query string, first int, after string) int
 	}
 
 	Subscription struct {
-		GetActivity     func(childComplexity int, channelID string) int
-		GetMessages     func(childComplexity int, channelID string) int
-		GetVideoViewers func(childComplexity int, videoID string) int
+		GetActivity       func(childComplexity int, channelID string) int
+		GetChannelViewers func(childComplexity int, channelID string, userID string) int
+		GetMessages       func(childComplexity int, channelID string, userID string) int
+		GetVideoViewers   func(childComplexity int, videoID string) int
 	}
 
 	Token struct {
@@ -312,6 +335,7 @@ type MutationResolver interface {
 	VerifyToken(ctx context.Context, id string, token string) (string, error)
 	VerifyEmail(ctx context.Context, id string, email string) (bool, error)
 	CreateChannel(ctx context.Context, userID string, input model.ChannelInput) (bool, error)
+	CreateChannelViewer(ctx context.Context, channelID string, userID string) (int, error)
 	UpdateStreamKey(ctx context.Context, userID string, streamkey string, playbackID string) (bool, error)
 	PostMessage(ctx context.Context, input *model.NewMessage) (*model.Message, error)
 	CreateVideo(ctx context.Context, input model.NewVideo) (bool, error)
@@ -324,12 +348,13 @@ type MutationResolver interface {
 	AddUserInChat(ctx context.Context, channelID string, userID string) (bool, error)
 	RemoveUserInChat(ctx context.Context, channelID string, userID string) (bool, error)
 	CreatePayment(ctx context.Context, input model.PaymentInput) (bool, error)
-	UpdatePayment(ctx context.Context, sessionID string, input model.PaymentInput) (bool, error)
+	UpdatePayment(ctx context.Context, input model.PaymentInput) (bool, error)
 	CreateMembershipDetails(ctx context.Context, input model.MembershipDetailsInput) (bool, error)
 	CreateMembership(ctx context.Context, input model.NewMembership) (*model.Membership, error)
 	UpdateMembership(ctx context.Context, id string, input model.NewMembership) (bool, error)
 	UpdateMembershipStatus(ctx context.Context, id string, isActive bool) (bool, error)
 	DeleteMembership(ctx context.Context, id string) (bool, error)
+	AddFlakes(ctx context.Context, userID string, amount int) (bool, error)
 }
 type QueryResolver interface {
 	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
@@ -344,6 +369,7 @@ type QueryResolver interface {
 	GetVideoViews(ctx context.Context, videoID string) (int, error)
 	GetChannelViews(ctx context.Context, channelID string) (int, error)
 	CountChannelVideos(ctx context.Context, channelID string) (int, error)
+	SearchVideos(ctx context.Context, query string, first int, after string) (*model.VideosResult, error)
 	GetFollowers(ctx context.Context, userID string, first int, after string) (*model.FollowersResult, error)
 	GetFollowing(ctx context.Context, followerID string, first int, after string) (*model.FollowersResult, error)
 	CountFollowers(ctx context.Context, userID string) (int, error)
@@ -352,14 +378,19 @@ type QueryResolver interface {
 	GetRecentMessages(ctx context.Context, channelID string) ([]*model.Message, error)
 	GetChatIdentity(ctx context.Context, userID string) (*model.ChatIdentity, error)
 	GetUsersInChat(ctx context.Context, channelID string) ([]*model.User, error)
+	GetRecentActivity(ctx context.Context, channelID string) ([]*model.Activity, error)
 	GetPaymentBySession(ctx context.Context, sessionID string) (*model.Payment, error)
 	GetUserMembership(ctx context.Context, userID string, channelID string) (*model.Membership, error)
 	GetMembershipByID(ctx context.Context, id string) (*model.Membership, error)
+	GetChannelMemberships(ctx context.Context, channelID string) ([]*model.Membership, error)
 	GetChannelInfo(ctx context.Context, userID string) (*model.Channel, error)
+	GetFlakes(ctx context.Context, userID string) (int, error)
+	GetChannelFlakes(ctx context.Context, channelID string) ([]*model.ChannelFlakes, error)
 }
 type SubscriptionResolver interface {
-	GetMessages(ctx context.Context, channelID string) (<-chan *model.Message, error)
+	GetMessages(ctx context.Context, channelID string, userID string) (<-chan *model.Message, error)
 	GetVideoViewers(ctx context.Context, videoID string) (<-chan int, error)
+	GetChannelViewers(ctx context.Context, channelID string, userID string) (<-chan int, error)
 	GetActivity(ctx context.Context, channelID string) (<-chan *model.Activity, error)
 }
 
@@ -515,6 +546,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Channel.UpdatedAt(childComplexity), true
 
+	case "ChannelFlakes.amount":
+		if e.complexity.ChannelFlakes.Amount == nil {
+			break
+		}
+
+		return e.complexity.ChannelFlakes.Amount(childComplexity), true
+
+	case "ChannelFlakes.channel_id":
+		if e.complexity.ChannelFlakes.ChannelID == nil {
+			break
+		}
+
+		return e.complexity.ChannelFlakes.ChannelID(childComplexity), true
+
+	case "ChannelFlakes.created_at":
+		if e.complexity.ChannelFlakes.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.ChannelFlakes.CreatedAt(childComplexity), true
+
+	case "ChannelFlakes.id":
+		if e.complexity.ChannelFlakes.ID == nil {
+			break
+		}
+
+		return e.complexity.ChannelFlakes.ID(childComplexity), true
+
+	case "ChannelFlakes.sender_id":
+		if e.complexity.ChannelFlakes.SenderID == nil {
+			break
+		}
+
+		return e.complexity.ChannelFlakes.SenderID(childComplexity), true
+
 	case "ChannelViewer.channel_id":
 		if e.complexity.ChannelViewer.ChannelID == nil {
 			break
@@ -570,6 +636,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ChatIdentity.UserID(childComplexity), true
+
+	case "Flakes.amount":
+		if e.complexity.Flakes.Amount == nil {
+			break
+		}
+
+		return e.complexity.Flakes.Amount(childComplexity), true
+
+	case "Flakes.created_at":
+		if e.complexity.Flakes.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Flakes.CreatedAt(childComplexity), true
+
+	case "Flakes.id":
+		if e.complexity.Flakes.ID == nil {
+			break
+		}
+
+		return e.complexity.Flakes.ID(childComplexity), true
+
+	case "Flakes.user_id":
+		if e.complexity.Flakes.UserID == nil {
+			break
+		}
+
+		return e.complexity.Flakes.UserID(childComplexity), true
 
 	case "Follower.created_at":
 		if e.complexity.Follower.CreatedAt == nil {
@@ -753,6 +847,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.MembershipDetails.UpdatedAt(childComplexity), true
 
+	case "Message.amount":
+		if e.complexity.Message.Amount == nil {
+			break
+		}
+
+		return e.complexity.Message.Amount(childComplexity), true
+
 	case "Message.channel_id":
 		if e.complexity.Message.ChannelID == nil {
 			break
@@ -837,6 +938,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Message.UpdatedAt(childComplexity), true
 
+	case "Mutation.addFlakes":
+		if e.complexity.Mutation.AddFlakes == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addFlakes_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddFlakes(childComplexity, args["user_id"].(string), args["amount"].(int)), true
+
 	case "Mutation.addUserInChat":
 		if e.complexity.Mutation.AddUserInChat == nil {
 			break
@@ -860,6 +973,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateChannel(childComplexity, args["user_id"].(string), args["input"].(model.ChannelInput)), true
+
+	case "Mutation.createChannelViewer":
+		if e.complexity.Mutation.CreateChannelViewer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createChannelViewer_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateChannelViewer(childComplexity, args["channel_id"].(string), args["user_id"].(string)), true
 
 	case "Mutation.createMembership":
 		if e.complexity.Mutation.CreateMembership == nil {
@@ -1063,7 +1188,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdatePayment(childComplexity, args["session_id"].(string), args["input"].(model.PaymentInput)), true
+		return e.complexity.Mutation.UpdatePayment(childComplexity, args["input"].(model.PaymentInput)), true
 
 	case "Mutation.updateStreamKey":
 		if e.complexity.Mutation.UpdateStreamKey == nil {
@@ -1224,20 +1349,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Payment.CreatedAt(childComplexity), true
 
-	case "Payment.entity_id":
-		if e.complexity.Payment.EntityID == nil {
-			break
-		}
-
-		return e.complexity.Payment.EntityID(childComplexity), true
-
-	case "Payment.entity_type":
-		if e.complexity.Payment.EntityType == nil {
-			break
-		}
-
-		return e.complexity.Payment.EntityType(childComplexity), true
-
 	case "Payment.id":
 		if e.complexity.Payment.ID == nil {
 			break
@@ -1245,12 +1356,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Payment.ID(childComplexity), true
 
-	case "Payment.session_id":
-		if e.complexity.Payment.SessionID == nil {
+	case "Payment.order_id":
+		if e.complexity.Payment.OrderID == nil {
 			break
 		}
 
-		return e.complexity.Payment.SessionID(childComplexity), true
+		return e.complexity.Payment.OrderID(childComplexity), true
 
 	case "Payment.status":
 		if e.complexity.Payment.Status == nil {
@@ -1265,6 +1376,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Payment.UpdatedAt(childComplexity), true
+
+	case "Payment.user_id":
+		if e.complexity.Payment.UserID == nil {
+			break
+		}
+
+		return e.complexity.Payment.UserID(childComplexity), true
 
 	case "Query.countChannelVideos":
 		if e.complexity.Query.CountChannelVideos == nil {
@@ -1314,6 +1432,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetAllVideos(childComplexity, args["first"].(int), args["after"].(string)), true
 
+	case "Query.getChannelFlakes":
+		if e.complexity.Query.GetChannelFlakes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getChannelFlakes_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetChannelFlakes(childComplexity, args["channel_id"].(string)), true
+
 	case "Query.getChannelInfo":
 		if e.complexity.Query.GetChannelInfo == nil {
 			break
@@ -1325,6 +1455,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetChannelInfo(childComplexity, args["user_id"].(string)), true
+
+	case "Query.getChannelMemberships":
+		if e.complexity.Query.GetChannelMemberships == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getChannelMemberships_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetChannelMemberships(childComplexity, args["channel_id"].(string)), true
 
 	case "Query.getChannelViews":
 		if e.complexity.Query.GetChannelViews == nil {
@@ -1349,6 +1491,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetChatIdentity(childComplexity, args["user_id"].(string)), true
+
+	case "Query.getFlakes":
+		if e.complexity.Query.GetFlakes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getFlakes_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetFlakes(childComplexity, args["user_id"].(string)), true
 
 	case "Query.getFollowers":
 		if e.complexity.Query.GetFollowers == nil {
@@ -1397,6 +1551,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetPaymentBySession(childComplexity, args["session_id"].(string)), true
+
+	case "Query.getRecentActivity":
+		if e.complexity.Query.GetRecentActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getRecentActivity_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetRecentActivity(childComplexity, args["channel_id"].(string)), true
 
 	case "Query.getRecentMessages":
 		if e.complexity.Query.GetRecentMessages == nil {
@@ -1554,6 +1720,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.SearchUsers(childComplexity, args["query"].(string)), true
 
+	case "Query.searchVideos":
+		if e.complexity.Query.SearchVideos == nil {
+			break
+		}
+
+		args, err := ec.field_Query_searchVideos_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchVideos(childComplexity, args["query"].(string), args["first"].(int), args["after"].(string)), true
+
 	case "Subscription.getActivity":
 		if e.complexity.Subscription.GetActivity == nil {
 			break
@@ -1566,6 +1744,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Subscription.GetActivity(childComplexity, args["channel_id"].(string)), true
 
+	case "Subscription.getChannelViewers":
+		if e.complexity.Subscription.GetChannelViewers == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_getChannelViewers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.GetChannelViewers(childComplexity, args["channel_id"].(string), args["user_id"].(string)), true
+
 	case "Subscription.getMessages":
 		if e.complexity.Subscription.GetMessages == nil {
 			break
@@ -1576,7 +1766,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Subscription.GetMessages(childComplexity, args["channel_id"].(string)), true
+		return e.complexity.Subscription.GetMessages(childComplexity, args["channel_id"].(string), args["user_id"].(string)), true
 
 	case "Subscription.getVideoViewers":
 		if e.complexity.Subscription.GetVideoViewers == nil {
@@ -2075,7 +2265,55 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_addFlakes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["amount"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["amount"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addUserInChat_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["channel_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channel_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["channel_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createChannelViewer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -2411,24 +2649,15 @@ func (ec *executionContext) field_Mutation_updateMembership_args(ctx context.Con
 func (ec *executionContext) field_Mutation_updatePayment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["session_id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("session_id"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["session_id"] = arg0
-	var arg1 model.PaymentInput
+	var arg0 model.PaymentInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNPaymentInput2githubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐPaymentInput(ctx, tmp)
+		arg0, err = ec.unmarshalNPaymentInput2githubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐPaymentInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -2717,6 +2946,21 @@ func (ec *executionContext) field_Query_getAllVideos_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_getChannelFlakes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["channel_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channel_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["channel_id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_getChannelInfo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2729,6 +2973,21 @@ func (ec *executionContext) field_Query_getChannelInfo_args(ctx context.Context,
 		}
 	}
 	args["user_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getChannelMemberships_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["channel_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channel_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["channel_id"] = arg0
 	return args, nil
 }
 
@@ -2748,6 +3007,21 @@ func (ec *executionContext) field_Query_getChannelViews_args(ctx context.Context
 }
 
 func (ec *executionContext) field_Query_getChatIdentity_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getFlakes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -2855,6 +3129,21 @@ func (ec *executionContext) field_Query_getPaymentBySession_args(ctx context.Con
 		}
 	}
 	args["session_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getRecentActivity_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["channel_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channel_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["channel_id"] = arg0
 	return args, nil
 }
 
@@ -3098,6 +3387,39 @@ func (ec *executionContext) field_Query_searchUsers_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_searchVideos_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["query"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["query"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg1
+	var arg2 string
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Subscription_getActivity_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -3113,6 +3435,30 @@ func (ec *executionContext) field_Subscription_getActivity_args(ctx context.Cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Subscription_getChannelViewers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["channel_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channel_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["channel_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Subscription_getMessages_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -3125,6 +3471,15 @@ func (ec *executionContext) field_Subscription_getMessages_args(ctx context.Cont
 		}
 	}
 	args["channel_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg1
 	return args, nil
 }
 
@@ -4119,6 +4474,226 @@ func (ec *executionContext) fieldContext_Channel_updated_at(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _ChannelFlakes_id(ctx context.Context, field graphql.CollectedField, obj *model.ChannelFlakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ChannelFlakes_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNUUID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ChannelFlakes_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelFlakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UUID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelFlakes_channel_id(ctx context.Context, field graphql.CollectedField, obj *model.ChannelFlakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ChannelFlakes_channel_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChannelID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ChannelFlakes_channel_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelFlakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelFlakes_sender_id(ctx context.Context, field graphql.CollectedField, obj *model.ChannelFlakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ChannelFlakes_sender_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SenderID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ChannelFlakes_sender_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelFlakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelFlakes_amount(ctx context.Context, field graphql.CollectedField, obj *model.ChannelFlakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ChannelFlakes_amount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Amount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ChannelFlakes_amount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelFlakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelFlakes_created_at(ctx context.Context, field graphql.CollectedField, obj *model.ChannelFlakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ChannelFlakes_created_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ChannelFlakes_created_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelFlakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ChannelViewer_id(ctx context.Context, field graphql.CollectedField, obj *model.ChannelViewer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ChannelViewer_id(ctx, field)
 	if err != nil {
@@ -4466,6 +5041,182 @@ func (ec *executionContext) fieldContext_ChatIdentity_badge(ctx context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Flakes_id(ctx context.Context, field graphql.CollectedField, obj *model.Flakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Flakes_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNUUID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Flakes_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Flakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UUID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Flakes_user_id(ctx context.Context, field graphql.CollectedField, obj *model.Flakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Flakes_user_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Flakes_user_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Flakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Flakes_amount(ctx context.Context, field graphql.CollectedField, obj *model.Flakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Flakes_amount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Amount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Flakes_amount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Flakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Flakes_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Flakes) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Flakes_created_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Flakes_created_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Flakes",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6003,6 +6754,50 @@ func (ec *executionContext) fieldContext_Message_message_type(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Message_amount(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Message_amount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Amount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Message_amount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Message",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Message_drop_code(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Message_drop_code(ctx, field)
 	if err != nil {
@@ -6852,6 +7647,61 @@ func (ec *executionContext) fieldContext_Mutation_createChannel(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createChannelViewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createChannelViewer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateChannelViewer(rctx, fc.Args["channel_id"].(string), fc.Args["user_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createChannelViewer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createChannelViewer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_updateStreamKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_updateStreamKey(ctx, field)
 	if err != nil {
@@ -7000,6 +7850,8 @@ func (ec *executionContext) fieldContext_Mutation_postMessage(ctx context.Contex
 				return ec.fieldContext_Message_message(ctx, field)
 			case "message_type":
 				return ec.fieldContext_Message_message_type(ctx, field)
+			case "amount":
+				return ec.fieldContext_Message_amount(ctx, field)
 			case "drop_code":
 				return ec.fieldContext_Message_drop_code(ctx, field)
 			case "drop_message":
@@ -7803,7 +8655,7 @@ func (ec *executionContext) _Mutation_updatePayment(ctx context.Context, field g
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdatePayment(rctx, fc.Args["session_id"].(string), fc.Args["input"].(model.PaymentInput))
+			return ec.resolvers.Mutation().UpdatePayment(rctx, fc.Args["input"].(model.PaymentInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -8238,6 +9090,81 @@ func (ec *executionContext) fieldContext_Mutation_deleteMembership(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_addFlakes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_addFlakes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().AddFlakes(rctx, fc.Args["user_id"].(string), fc.Args["amount"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Auth == nil {
+				return nil, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addFlakes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addFlakes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Notification_id(ctx context.Context, field graphql.CollectedField, obj *model.Notification) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Notification_id(ctx, field)
 	if err != nil {
@@ -8634,8 +9561,8 @@ func (ec *executionContext) fieldContext_Payment_id(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Payment_session_id(ctx context.Context, field graphql.CollectedField, obj *model.Payment) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Payment_session_id(ctx, field)
+func (ec *executionContext) _Payment_user_id(ctx context.Context, field graphql.CollectedField, obj *model.Payment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Payment_user_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8648,7 +9575,7 @@ func (ec *executionContext) _Payment_session_id(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SessionID, nil
+		return obj.UserID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8665,7 +9592,7 @@ func (ec *executionContext) _Payment_session_id(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Payment_session_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Payment_user_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Payment",
 		Field:      field,
@@ -8678,8 +9605,8 @@ func (ec *executionContext) fieldContext_Payment_session_id(ctx context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Payment_entity_id(ctx context.Context, field graphql.CollectedField, obj *model.Payment) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Payment_entity_id(ctx, field)
+func (ec *executionContext) _Payment_order_id(ctx context.Context, field graphql.CollectedField, obj *model.Payment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Payment_order_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8692,7 +9619,7 @@ func (ec *executionContext) _Payment_entity_id(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.EntityID, nil
+		return obj.OrderID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8709,51 +9636,7 @@ func (ec *executionContext) _Payment_entity_id(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Payment_entity_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Payment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Payment_entity_type(ctx context.Context, field graphql.CollectedField, obj *model.Payment) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Payment_entity_type(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.EntityType, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Payment_entity_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Payment_order_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Payment",
 		Field:      field,
@@ -9769,6 +10652,64 @@ func (ec *executionContext) fieldContext_Query_countChannelVideos(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_searchVideos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_searchVideos(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchVideos(rctx, fc.Args["query"].(string), fc.Args["first"].(int), fc.Args["after"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.VideosResult)
+	fc.Result = res
+	return ec.marshalOVideosResult2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideosResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_searchVideos(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_VideosResult_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_VideosResult_pageInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VideosResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_searchVideos_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_getFollowers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_getFollowers(ctx, field)
 	if err != nil {
@@ -10103,6 +11044,8 @@ func (ec *executionContext) fieldContext_Query_getRecentMessages(ctx context.Con
 				return ec.fieldContext_Message_message(ctx, field)
 			case "message_type":
 				return ec.fieldContext_Message_message_type(ctx, field)
+			case "amount":
+				return ec.fieldContext_Message_amount(ctx, field)
 			case "drop_code":
 				return ec.fieldContext_Message_drop_code(ctx, field)
 			case "drop_message":
@@ -10144,28 +11087,8 @@ func (ec *executionContext) _Query_getChatIdentity(ctx context.Context, field gr
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().GetChatIdentity(rctx, fc.Args["user_id"].(string))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Auth == nil {
-				return nil, errors.New("directive auth is not implemented")
-			}
-			return ec.directives.Auth(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*model.ChatIdentity); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/glitchd/glitchd-server/graph/model.ChatIdentity`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetChatIdentity(rctx, fc.Args["user_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10305,6 +11228,81 @@ func (ec *executionContext) fieldContext_Query_getUsersInChat(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_getRecentActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getRecentActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetRecentActivity(rctx, fc.Args["channel_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Activity)
+	fc.Result = res
+	return ec.marshalNActivity2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐActivityᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getRecentActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Activity_id(ctx, field)
+			case "sender":
+				return ec.fieldContext_Activity_sender(ctx, field)
+			case "sender_id":
+				return ec.fieldContext_Activity_sender_id(ctx, field)
+			case "target":
+				return ec.fieldContext_Activity_target(ctx, field)
+			case "target_id":
+				return ec.fieldContext_Activity_target_id(ctx, field)
+			case "type":
+				return ec.fieldContext_Activity_type(ctx, field)
+			case "message":
+				return ec.fieldContext_Activity_message(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Activity_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Activity_updated_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Activity", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getRecentActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_getPaymentBySession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_getPaymentBySession(ctx, field)
 	if err != nil {
@@ -10346,12 +11344,10 @@ func (ec *executionContext) fieldContext_Query_getPaymentBySession(ctx context.C
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Payment_id(ctx, field)
-			case "session_id":
-				return ec.fieldContext_Payment_session_id(ctx, field)
-			case "entity_id":
-				return ec.fieldContext_Payment_entity_id(ctx, field)
-			case "entity_type":
-				return ec.fieldContext_Payment_entity_type(ctx, field)
+			case "user_id":
+				return ec.fieldContext_Payment_user_id(ctx, field)
+			case "order_id":
+				return ec.fieldContext_Payment_order_id(ctx, field)
 			case "status":
 				return ec.fieldContext_Payment_status(ctx, field)
 			case "created_at":
@@ -10566,6 +11562,101 @@ func (ec *executionContext) fieldContext_Query_getMembershipById(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_getChannelMemberships(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getChannelMemberships(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().GetChannelMemberships(rctx, fc.Args["channel_id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Auth == nil {
+				return nil, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.Membership); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/glitchd/glitchd-server/graph/model.Membership`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Membership)
+	fc.Result = res
+	return ec.marshalNMembership2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐMembershipᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getChannelMemberships(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Membership_id(ctx, field)
+			case "channel_id":
+				return ec.fieldContext_Membership_channel_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_Membership_user_id(ctx, field)
+			case "gifter":
+				return ec.fieldContext_Membership_gifter(ctx, field)
+			case "is_gift":
+				return ec.fieldContext_Membership_is_gift(ctx, field)
+			case "tier":
+				return ec.fieldContext_Membership_tier(ctx, field)
+			case "is_active":
+				return ec.fieldContext_Membership_is_active(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Membership_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Membership_updated_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Membership", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getChannelMemberships_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_getChannelInfo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_getChannelInfo(ctx, field)
 	if err != nil {
@@ -10657,6 +11748,128 @@ func (ec *executionContext) fieldContext_Query_getChannelInfo(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_getChannelInfo_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getFlakes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getFlakes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetFlakes(rctx, fc.Args["user_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getFlakes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getFlakes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getChannelFlakes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getChannelFlakes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetChannelFlakes(rctx, fc.Args["channel_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ChannelFlakes)
+	fc.Result = res
+	return ec.marshalNChannelFlakes2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐChannelFlakesᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getChannelFlakes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ChannelFlakes_id(ctx, field)
+			case "channel_id":
+				return ec.fieldContext_ChannelFlakes_channel_id(ctx, field)
+			case "sender_id":
+				return ec.fieldContext_ChannelFlakes_sender_id(ctx, field)
+			case "amount":
+				return ec.fieldContext_ChannelFlakes_amount(ctx, field)
+			case "created_at":
+				return ec.fieldContext_ChannelFlakes_created_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChannelFlakes", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getChannelFlakes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10806,7 +12019,7 @@ func (ec *executionContext) _Subscription_getMessages(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().GetMessages(rctx, fc.Args["channel_id"].(string))
+		return ec.resolvers.Subscription().GetMessages(rctx, fc.Args["channel_id"].(string), fc.Args["user_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10859,6 +12072,8 @@ func (ec *executionContext) fieldContext_Subscription_getMessages(ctx context.Co
 				return ec.fieldContext_Message_message(ctx, field)
 			case "message_type":
 				return ec.fieldContext_Message_message_type(ctx, field)
+			case "amount":
+				return ec.fieldContext_Message_amount(ctx, field)
 			case "drop_code":
 				return ec.fieldContext_Message_drop_code(ctx, field)
 			case "drop_message":
@@ -10950,6 +12165,75 @@ func (ec *executionContext) fieldContext_Subscription_getVideoViewers(ctx contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Subscription_getVideoViewers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_getChannelViewers(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_getChannelViewers(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().GetChannelViewers(rctx, fc.Args["channel_id"].(string), fc.Args["user_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan int):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNInt2int(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_getChannelViewers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_getChannelViewers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -14978,7 +16262,7 @@ func (ec *executionContext) unmarshalInputChannelInput(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"broadcaster_id", "title", "category", "streamkey", "playback_id", "tags", "is_branded"}
+	fieldsInOrder := [...]string{"broadcaster_id", "title", "category", "streamkey", "playback_id", "viewers", "tags", "is_branded"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15020,6 +16304,13 @@ func (ec *executionContext) unmarshalInputChannelInput(ctx context.Context, obj 
 				return it, err
 			}
 			it.PlaybackID = data
+		case "viewers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("viewers"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Viewers = data
 		case "tags":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
 			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
@@ -15266,7 +16557,7 @@ func (ec *executionContext) unmarshalInputNewMessage(ctx context.Context, obj in
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"channel_id", "sender_id", "message", "message_type", "is_sent", "reply_parent_message_id"}
+	fieldsInOrder := [...]string{"channel_id", "sender_id", "message", "message_type", "amount", "is_sent", "reply_parent_message_id"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15301,6 +16592,13 @@ func (ec *executionContext) unmarshalInputNewMessage(ctx context.Context, obj in
 				return it, err
 			}
 			it.MessageType = data
+		case "amount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Amount = data
 		case "is_sent":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("is_sent"))
 			data, err := ec.unmarshalNBoolean2bool(ctx, v)
@@ -15451,34 +16749,27 @@ func (ec *executionContext) unmarshalInputPaymentInput(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"session_id", "entity_id", "entity_type", "status"}
+	fieldsInOrder := [...]string{"user_id", "order_id", "status"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "session_id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("session_id"))
+		case "user_id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.SessionID = data
-		case "entity_id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("entity_id"))
+			it.UserID = data
+		case "order_id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_id"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.EntityID = data
-		case "entity_type":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("entity_type"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.EntityType = data
+			it.OrderID = data
 		case "status":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -15848,6 +17139,65 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var channelFlakesImplementors = []string{"ChannelFlakes"}
+
+func (ec *executionContext) _ChannelFlakes(ctx context.Context, sel ast.SelectionSet, obj *model.ChannelFlakes) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, channelFlakesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChannelFlakes")
+		case "id":
+			out.Values[i] = ec._ChannelFlakes_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "channel_id":
+			out.Values[i] = ec._ChannelFlakes_channel_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sender_id":
+			out.Values[i] = ec._ChannelFlakes_sender_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "amount":
+			out.Values[i] = ec._ChannelFlakes_amount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "created_at":
+			out.Values[i] = ec._ChannelFlakes_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var channelViewerImplementors = []string{"ChannelViewer"}
 
 func (ec *executionContext) _ChannelViewer(ctx context.Context, sel ast.SelectionSet, obj *model.ChannelViewer) graphql.Marshaler {
@@ -15930,6 +17280,60 @@ func (ec *executionContext) _ChatIdentity(ctx context.Context, sel ast.Selection
 			}
 		case "badge":
 			out.Values[i] = ec._ChatIdentity_badge(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var flakesImplementors = []string{"Flakes"}
+
+func (ec *executionContext) _Flakes(ctx context.Context, sel ast.SelectionSet, obj *model.Flakes) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, flakesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Flakes")
+		case "id":
+			out.Values[i] = ec._Flakes_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "user_id":
+			out.Values[i] = ec._Flakes_user_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "amount":
+			out.Values[i] = ec._Flakes_amount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "created_at":
+			out.Values[i] = ec._Flakes_created_at(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16302,6 +17706,11 @@ func (ec *executionContext) _Message(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "amount":
+			out.Values[i] = ec._Message_amount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "drop_code":
 			out.Values[i] = ec._Message_drop_code(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -16432,6 +17841,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createChannelViewer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createChannelViewer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "updateStreamKey":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateStreamKey(ctx, field)
@@ -16554,6 +17970,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteMembership":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteMembership(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "addFlakes":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addFlakes(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -16705,18 +18128,13 @@ func (ec *executionContext) _Payment(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "session_id":
-			out.Values[i] = ec._Payment_session_id(ctx, field, obj)
+		case "user_id":
+			out.Values[i] = ec._Payment_user_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "entity_id":
-			out.Values[i] = ec._Payment_entity_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "entity_type":
-			out.Values[i] = ec._Payment_entity_type(ctx, field, obj)
+		case "order_id":
+			out.Values[i] = ec._Payment_order_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -17032,6 +18450,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "searchVideos":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_searchVideos(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "getFollowers":
 			field := field
 
@@ -17202,6 +18639,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getRecentActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getRecentActivity(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "getPaymentBySession":
 			field := field
 
@@ -17268,6 +18727,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getChannelMemberships":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getChannelMemberships(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "getChannelInfo":
 			field := field
 
@@ -17278,6 +18759,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getChannelInfo(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getFlakes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getFlakes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getChannelFlakes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getChannelFlakes(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17338,6 +18863,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_getMessages(ctx, fields[0])
 	case "getVideoViewers":
 		return ec._Subscription_getVideoViewers(ctx, fields[0])
+	case "getChannelViewers":
+		return ec._Subscription_getChannelViewers(ctx, fields[0])
 	case "getActivity":
 		return ec._Subscription_getActivity(ctx, fields[0])
 	default:
@@ -18145,6 +19672,50 @@ func (ec *executionContext) marshalNActivity2githubᚗcomᚋglitchdᚋglitchdᚑ
 	return ec._Activity(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNActivity2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐActivityᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Activity) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNActivity2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐActivity(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNActivity2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐActivity(ctx context.Context, sel ast.SelectionSet, v *model.Activity) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -18182,6 +19753,60 @@ func (ec *executionContext) marshalNChannel2ᚖgithubᚗcomᚋglitchdᚋglitchd�
 		return graphql.Null
 	}
 	return ec._Channel(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNChannelFlakes2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐChannelFlakesᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ChannelFlakes) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNChannelFlakes2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐChannelFlakes(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNChannelFlakes2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐChannelFlakes(ctx context.Context, sel ast.SelectionSet, v *model.ChannelFlakes) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChannelFlakes(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNChannelInput2githubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐChannelInput(ctx context.Context, v interface{}) (model.ChannelInput, error) {
@@ -18298,6 +19923,50 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 
 func (ec *executionContext) marshalNMembership2githubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐMembership(ctx context.Context, sel ast.SelectionSet, v model.Membership) graphql.Marshaler {
 	return ec._Membership(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMembership2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐMembershipᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Membership) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMembership2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐMembership(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNMembership2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐMembership(ctx context.Context, sel ast.SelectionSet, v *model.Membership) graphql.Marshaler {

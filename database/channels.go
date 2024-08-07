@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/glitchd/glitchd-server/graph/model"
@@ -19,7 +18,6 @@ func (db *BUN) CreateChannel(user_id string, input model.ChannelInput) (bool, er
 	).Exec(context.Background())
 
 	if err != nil {
-		fmt.Println("Could not create channel. ", err)
 		return false, err
 	}
 	rows, err := res.RowsAffected()

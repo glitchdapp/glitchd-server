@@ -77,6 +77,7 @@ input ChannelInput {
     category: String!
     streamkey: String!
     playback_id: String!
+    viewers: String!
     tags: [String!]!
     is_branded: Boolean!
 }
@@ -159,6 +160,7 @@ type Message {
     is_sent: Boolean!
     message: String!
     message_type: String!
+    amount: Int!
     drop_code: String!
     drop_message: String!
     reply_parent_message_id: String!
@@ -171,6 +173,7 @@ input NewMessage {
     sender_id: String!
     message: String!
     message_type: String!
+    amount: Int!
     is_sent: Boolean!
     reply_parent_message_id: String!
 }
@@ -285,24 +288,38 @@ input FollowInput {
 
 type Payment {
     id: UUID!
-    session_id: String!
-    entity_id: String!
-    entity_type: String!
+    user_id: String!
+    order_id: String!
     status: String!
     created_at: Time!
     updated_at: Time!
 }
 
 input PaymentInput {
-    session_id: String!
-    entity_id: String!
-    entity_type: String!
+    user_id: String!
+    order_id: String!
     status: String!
 }
 
+type Flakes {
+    id: UUID!
+    user_id: String!
+    amount: Int!
+    created_at: Time!
+}
+
+type ChannelFlakes {
+    id: UUID!
+    channel_id: String!
+    sender_id: String!
+    amount: Int!
+    created_at: Time!
+}
+
 type Subscription {
-    getMessages(channel_id: String!): Message!
+    getMessages(channel_id: String!, user_id: String!): Message!
     getVideoViewers(video_id: String!): Int!
+    getChannelViewers(channel_id: String!, user_id: String!): Int!
     getActivity(channel_id: String!): Activity!
 }
 
@@ -322,6 +339,7 @@ type Query {
     getVideoViews(video_id: String!): Int!
     getChannelViews(channel_id: String!): Int!
     countChannelVideos(channel_id: String!): Int!
+    searchVideos(query: String!, first: Int!, after: String!): VideosResult
 
     # Handle Connections
     getFollowers(user_id: String!, first: Int!, after: String!): FollowersResult
@@ -332,15 +350,20 @@ type Query {
 
     # Get Channel Info
     getRecentMessages(channel_id: String!): [Message!]!
-    getChatIdentity(user_id: String!): ChatIdentity! @auth
+    getChatIdentity(user_id: String!): ChatIdentity!
     getUsersInChat(channel_id: String!): [User!]!
+    getRecentActivity(channel_id: String!): [Activity!]!
 
     getPaymentBySession(session_id: String!): Payment!
 
     getUserMembership(user_id: String!, channel_id: String!): Membership! @auth
     getMembershipById(id: String!): Membership! @auth
+    getChannelMemberships(channel_id: String!): [Membership!]! @auth
 
     getChannelInfo(user_id: String!): Channel! @auth
+
+    getFlakes(user_id: String!): Int!
+    getChannelFlakes(channel_id: String!): [ChannelFlakes!]!
 }
 
 type Mutation {
@@ -358,6 +381,7 @@ type Mutation {
 
     # Manage Stream
     createChannel(user_id: String!, input: ChannelInput!): Boolean! @auth
+    createChannelViewer(channel_id: String!, user_id: String!): Int!
     updateStreamKey(user_id: String!, streamkey: String!, playback_id: String!): Boolean! @auth
 
     # Send Chat Messages
@@ -380,7 +404,7 @@ type Mutation {
 
     # Track Payments
     createPayment(input: PaymentInput!): Boolean! @auth
-    updatePayment(session_id: String!, input: PaymentInput!): Boolean! @auth
+    updatePayment(input: PaymentInput!): Boolean! @auth
 
     # Handle Memberships
     createMembershipDetails(input: MembershipDetailsInput!): Boolean! @auth
@@ -388,4 +412,6 @@ type Mutation {
     updateMembership(id: String!, input: NewMembership!): Boolean! @auth
     updateMembershipStatus(id: String!, is_active: Boolean!): Boolean!
     deleteMembership(id: String!): Boolean! @auth
+
+    addFlakes(user_id: String!, amount: Int!): Boolean! @auth
 }

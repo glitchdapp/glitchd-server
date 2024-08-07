@@ -12,9 +12,10 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	Rooms    sync.Map
-	Viewers  sync.Map
-	Activity sync.Map
+	Rooms          sync.Map
+	Viewers        sync.Map
+	ChannelViewers sync.Map
+	Activity       sync.Map
 }
 
 type ChatResolver struct {
@@ -54,6 +55,17 @@ type VideoPage struct {
 	Observers sync.Map
 }
 
+type ChannelObserver struct {
+	ChannelID string
+	Count     chan int
+}
+
+type ChannelPage struct {
+	ChannelID string
+	Count     int
+	Observers sync.Map
+}
+
 type ActivityResolver struct {
 	ChannelID         string
 	Activity          *model.Activity
@@ -86,6 +98,15 @@ func (r *Resolver) getVideoViewers(videoID string) *VideoPage {
 	})
 
 	return page.(*VideoPage)
+}
+
+func (r *Resolver) getChannelViewers(channelID string) *ChannelPage {
+	page, _ := r.ChannelViewers.LoadOrStore(channelID, &ChannelPage{
+		ChannelID: channelID,
+		Count:     0,
+	})
+
+	return page.(*ChannelPage)
 }
 
 func (r *Resolver) getChannelActivity(channelID string) *ActivityPage {

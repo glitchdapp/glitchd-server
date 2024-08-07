@@ -28,14 +28,14 @@ func (db *BUN) CreateVideo(input model.NewVideo) (bool, error) {
 
 	return true, nil
 }
-func (db *BUN) CreateChannelViewer(input model.ChannelViewerInput) (int, error) {
+func (db *BUN) CreateChannelViewer(channelID string, userID string) (int, error) {
 
 	var now = time.Now()
 	id := uuid.New().String()
 
 	_, err := db.client.NewRaw(
 		"INSERT INTO ? (id, channel_id, user_id, created_at) VALUES (?, ?, ?, ?)",
-		bun.Ident("video_views"), id, input.ChannelID, input.UserID, now,
+		bun.Ident("channel_viewers"), id, channelID, userID, now,
 	).Exec(context.Background())
 
 	if err != nil {
@@ -43,33 +43,32 @@ func (db *BUN) CreateChannelViewer(input model.ChannelViewerInput) (int, error) 
 		return 0, err
 	}
 
-	count, _ := db.GetChannelViewers(input.ChannelID)
+	count, _ := db.GetChannelViewers(channelID)
 
 	return count, nil
 }
 
-func (db *BUN) DeleteChannelView(user_id string) (bool, error) {
+func (db *BUN) DeleteChannelView(channel_id string, user_id string) (int, error) {
 	var channel_view model.ChannelViewer
 
-	row, err := db.client.NewDelete().Model(&channel_view).Where("user_id = ?", user_id).Returning("*").Exec(context.Background())
+	row, err := db.client.NewDelete().Model(&channel_view).Where("channel_id = ? AND user_id = ?", channel_id, user_id).Returning("*").Exec(context.Background())
+	count, _ := db.GetChannelViewers(channel_id)
 
 	if err != nil {
-		fmt.Println("Could not delete channel view: ", err)
-		return false, err
+		return count, err
 	}
 
 	rows, err := row.RowsAffected()
 
 	if err != nil {
-		fmt.Println("Could not fetch rows in delete channel views: ", err)
-		return false, err
+		return count, err
 	}
 
 	if rows > 0 {
-		return true, nil
+		return count, nil
 	}
 
-	return false, nil
+	return count, nil
 
 }
 
@@ -484,4 +483,89 @@ func (db *BUN) GetVideoByID(id string) (*model.Video, error) {
 	}
 
 	return &video, nil
+}
+
+func (db *BUN) SearchVideos(query string, first int, after string) (*model.VideosResult, error) {
+	var videos []*model.Video
+	var decodedCursor string
+	b, err := base64.StdEncoding.DecodeString(after)
+
+	if err != nil {
+		fmt.Println("Could not decode cursor: ", err)
+		return nil, err
+	}
+
+	decodedCursor = string(b)
+	t := strings.Trim(decodedCursor, " +0000")
+
+	if after == "" {
+		err := db.client.NewRaw(
+			"SELECT * FROM videos WHERE LOWER(title) LIKE LOWER(?) OR LOWER(caption) LIKE LOWER(?) ORDER BY created_at ASC LIMIT ?",
+			"%"+query+"%", "%"+query+"%", first,
+		).Scan(context.Background(), &videos)
+		if err != nil {
+			fmt.Println("Could not fetch videos: ", err)
+			return nil, err
+		}
+	} else {
+		err := db.client.NewRaw(
+			"SELECT * FROM videos WHERE LOWER(title) LIKE LOWER(?) OR LOWER(caption) LIKE LOWER(?) AND created_at > ? ORDER BY created_at ASC LIMIT ?",
+			"%"+query+"%", "%"+query+"%", t, first,
+		).Scan(context.Background(), &videos)
+		if err != nil {
+			fmt.Println("Could not fetch sesrched videos: ", err)
+			return nil, err
+		}
+	}
+
+	var result *model.VideosResult
+	var edges []*model.VideosEdge
+	var pageInfo *model.PageInfo
+
+	if len(videos) == 0 {
+		pageInfo = &model.PageInfo{
+			EndCursor:   "",
+			HasNextPage: false,
+		}
+
+		result = &model.VideosResult{
+			PageInfo: pageInfo,
+			Edges:    []*model.VideosEdge{},
+		}
+		return result, nil
+	}
+
+	for _, v := range videos {
+		v.Views, _ = db.GetVideoViews(v.ID)
+		edges = append(edges, &model.VideosEdge{
+			Cursor: base64.StdEncoding.EncodeToString([]byte(v.CreatedAt.String())),
+			Node:   v,
+		})
+	}
+
+	var endCursor = base64.StdEncoding.EncodeToString([]byte(videos[len(videos)-1].CreatedAt.String()))
+	var hasNextPage bool
+
+	count, err := db.client.NewSelect().Model(&videos).Where("LOWER(title) LIKE LOWER(?) OR LOWER(caption) LIKE LOWER(?)", query, query).Where("created_at > ?", videos[len(videos)-1].CreatedAt).Count(context.Background())
+
+	if err != nil {
+		fmt.Println("Could not count remaining video rows for pagination: ", err)
+		return nil, err
+	}
+
+	if count > 0 {
+		hasNextPage = true
+	}
+
+	pageInfo = &model.PageInfo{
+		EndCursor:   endCursor,
+		HasNextPage: hasNextPage,
+	}
+
+	result = &model.VideosResult{
+		PageInfo: pageInfo,
+		Edges:    edges,
+	}
+
+	return result, nil
 }

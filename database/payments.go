@@ -16,8 +16,8 @@ func (db *BUN) CreatePayment(input model.PaymentInput) (bool, error) {
 	now := time.Now()
 
 	res, err := db.client.NewRaw(
-		"INSERT INTO ? (id, session_id, entity_id, entity_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-		bun.Ident("payments"), id, input.SessionID, input.EntityID, input.EntityType, input.Status, now,
+		"INSERT INTO ? (id, user_id, order_id, status, created_at) VALUES (?, ?, ?, ?, ?)",
+		bun.Ident("payments"), id, input.UserID, input.OrderID, input.Status, now,
 	).Exec(context.Background())
 
 	if err != nil {
@@ -39,11 +39,11 @@ func (db *BUN) CreatePayment(input model.PaymentInput) (bool, error) {
 	return false, nil
 }
 
-func (db *BUN) UpdatePayment(session_id string, input model.PaymentInput) (bool, error) {
+func (db *BUN) UpdatePayment(input model.PaymentInput) (bool, error) {
 
 	row, err := db.client.NewRaw(
-		"UPDATE payments SET session_id = ?, entity_id = ?, entity_type = ?, status = ? WHERE id = ?",
-		input.SessionID, input.EntityID, input.EntityType, input.Status, input.SessionID,
+		"UPDATE payments SET user_id = ?, status = ? WHERE order_id = ?",
+		input.UserID, input.Status, input.OrderID,
 	).Exec(context.Background())
 	if err != nil {
 		fmt.Println("Could not update payment: ", err)
@@ -70,7 +70,7 @@ func (db *BUN) GetPaymentBySession(session_id string) (*model.Payment, error) {
 	err := db.client.NewRaw("SELECT * FROM payments WHERE session_id = ?", session_id).Scan(context.Background(), &result)
 
 	if err != nil {
-		fmt.Print("\n Error found when querying for payments with id: ", err)
+		fmt.Print("Error found when querying for payments with id: ", err)
 		return nil, err
 	}
 

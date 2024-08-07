@@ -48,10 +48,10 @@ func (db *BUN) GetActivity(id string) (*model.Activity, error) {
 	return &result, nil
 }
 
-func (db *BUN) GetRecentAcivity(channelID string) ([]*model.Activity, error) {
+func (db *BUN) GetRecentActivity(channelID string) ([]*model.Activity, error) {
 	var activity []*model.Activity
 	err := db.client.NewRaw(
-		"SELECT msg.* FROM (SELECT * FROM ? WHERE target_id = ? ORDER BY created_at DESC LIMIT 20) msg ORDER BY created_at ASC",
+		"SELECT msg.* FROM (SELECT * FROM ? WHERE target_id = ? ORDER BY created_at DESC LIMIT 40) msg ORDER BY created_at ASC",
 		bun.Ident("activities"), channelID).Scan(context.Background(), &activity)
 
 	for index, act := range activity {
