@@ -33,7 +33,7 @@ func (db *BUN) CreateVideoJob(job_id string, status string) (bool, error) {
 	id := uuid.New().String()
 
 	_, err := db.client.NewRaw(
-		"INSERT INTO video_jobs (id, job_id, status) VALUES (?, ?, ?) ON CONFLICT (job_id) DO UPDATE job_id=EXCLUDED.job_id, status=EXCLUDED.status",
+		"INSERT INTO video_jobs (id, job_id, status) VALUES (?, ?, ?) ON CONFLICT (job_id) DO UPDATE SET job_id=EXCLUDED.job_id, status=EXCLUDED.status",
 		id, job_id, status,
 	).Exec(context.Background())
 
