@@ -369,7 +369,7 @@ type MutationResolver interface {
 	CreateVideoView(ctx context.Context, input model.NewVideoView) (int, error)
 	UpdateVideo(ctx context.Context, id string, input model.UpdateVideo) (bool, error)
 	DeleteVideo(ctx context.Context, id string) (bool, error)
-	UpdateVideoJob(ctx context.Context, jobID string, status string) (bool, error)
+	UpdateVideoJob(ctx context.Context, jobID string, status string) (string, error)
 	FollowUser(ctx context.Context, input model.FollowInput) (*model.Follower, error)
 	RemoveFollower(ctx context.Context, userID string, followerID string) (bool, error)
 	UpdateChatIdentity(ctx context.Context, userID string, input model.ChatIdentityInput) (bool, error)
@@ -8908,9 +8908,9 @@ func (ec *executionContext) _Mutation_updateVideoJob(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_updateVideoJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8920,7 +8920,7 @@ func (ec *executionContext) fieldContext_Mutation_updateVideoJob(ctx context.Con
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	defer func() {

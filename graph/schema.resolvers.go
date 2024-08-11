@@ -185,20 +185,20 @@ func (r *mutationResolver) DeleteVideo(ctx context.Context, id string) (bool, er
 }
 
 // UpdateVideoJob is the resolver for the updateVideoJob field.
-func (r *mutationResolver) UpdateVideoJob(ctx context.Context, jobID string, status string) (bool, error) {
+func (r *mutationResolver) UpdateVideoJob(ctx context.Context, jobID string, status string) (string, error) {
 	jobs := r.getJobStatus(jobID)
-	updated, err := database.DB.CreateVideoJob(jobID, status)
+	stats, err := database.DB.CreateVideoJob(jobID, status)
 
 	jobs.Observers.Range(func(_, v any) bool {
 		observer := v.(*JobObserver)
 
 		if observer.JobID == jobs.JobID {
-			observer.Status <- status
+			observer.Status <- stats
 		}
 		return true
 	})
 
-	return updated, err
+	return stats, err
 }
 
 // FollowUser is the resolver for the followUser field.
@@ -567,6 +567,8 @@ func (r *subscriptionResolver) GetVideoJob(ctx context.Context, jobID string) (<
 		room.Observers.Delete(id)
 	}()
 
+	fmt.Println("jobs: ", jobID, events)
+
 	room.Observers.Store(id, &JobObserver{
 		JobID:  jobID,
 		Status: events,
@@ -587,19 +589,3 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *queryResolver) GetVideoByJobID(ctx context.Context, jobID string) (*model.Video, error) {
-	panic(fmt.Errorf("not implemented: GetVideoByJobID - getVideoByJobId"))
-}
-func (r *mutationResolver) UpdateMembershipDetails(ctx context.Context, input model.MembershipDetailsInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: UpdateMembershipDetails - updateMembershipDetails"))
-}
-func (r *mutationResolver) SendFlakes(ctx context.Context, channelID string, userID string, amount int, message string) (bool, error) {
-	return database.DB.SendFlakes(channelID, userID, amount)
-}

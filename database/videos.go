@@ -29,7 +29,7 @@ func (db *BUN) CreateVideo(input model.NewVideo) (string, error) {
 	return id, nil
 }
 
-func (db *BUN) CreateVideoJob(job_id string, status string) (bool, error) {
+func (db *BUN) CreateVideoJob(job_id string, status string) (string, error) {
 	id := uuid.New().String()
 
 	_, err := db.client.NewRaw(
@@ -39,10 +39,10 @@ func (db *BUN) CreateVideoJob(job_id string, status string) (bool, error) {
 
 	if err != nil {
 		fmt.Println("Error found when creating video job: ", err)
-		return false, err
+		return "", err
 	}
 
-	return true, nil
+	return status, nil
 }
 
 func (db *BUN) CreateChannelViewer(channelID string, userID string) (int, error) {
