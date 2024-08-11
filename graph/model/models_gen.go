@@ -312,6 +312,18 @@ type Video struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type VideoJob struct {
+	ID        string    `json:"id"`
+	JobID     string    `json:"job_id"`
+	Status    string    `json:"status"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type VideoJobInput struct {
+	JobID  string `json:"job_id"`
+	Status string `json:"status"`
+}
+
 type VideoView struct {
 	ID        string    `json:"id"`
 	VideoID   string    `json:"video_id"`

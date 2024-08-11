@@ -1,3 +1,4 @@
 DROP TABLE IF EXISTS videos;
 DROP TABLE IF EXISTS video_views;
 DROP TABLE IF EXISTS live_viewers;
+DROP TABLE IF EXISTS video_jobs;

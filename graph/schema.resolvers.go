@@ -144,7 +144,7 @@ func (r *mutationResolver) PostMessage(ctx context.Context, input *model.NewMess
 }
 
 // CreateVideo is the resolver for the createVideo field.
-func (r *mutationResolver) CreateVideo(ctx context.Context, input model.NewVideo) (bool, error) {
+func (r *mutationResolver) CreateVideo(ctx context.Context, input model.NewVideo) (string, error) {
 	return database.DB.CreateVideo(input)
 }
 
@@ -177,6 +177,11 @@ func (r *mutationResolver) UpdateVideo(ctx context.Context, id string, input mod
 // DeleteVideo is the resolver for the deleteVideo field.
 func (r *mutationResolver) DeleteVideo(ctx context.Context, id string) (bool, error) {
 	return database.DB.DeleteVideo(id)
+}
+
+// UpdateVideoJob is the resolver for the updateVideoJob field.
+func (r *mutationResolver) UpdateVideoJob(ctx context.Context, jobID string, status string) (bool, error) {
+	return database.DB.CreateVideoJob(jobID, status)
 }
 
 // FollowUser is the resolver for the followUser field.
@@ -531,6 +536,11 @@ func (r *subscriptionResolver) GetActivity(ctx context.Context, channelID string
 	})
 
 	return events, nil
+}
+
+// GetVideoJob is the resolver for the getVideoJob field.
+func (r *subscriptionResolver) GetVideoJob(ctx context.Context, jobID string) (<-chan *model.VideoJob, error) {
+	panic(fmt.Errorf("not implemented: GetVideoJob - getVideoJob"))
 }
 
 // Mutation returns MutationResolver implementation.

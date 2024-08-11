@@ -198,6 +198,7 @@ type ComplexityRoot struct {
 		UpdateUserPhoto         func(childComplexity int, id string, photo string) int
 		UpdateUserStripe        func(childComplexity int, id string, input *model.UserStripeInput) int
 		UpdateVideo             func(childComplexity int, id string, input model.UpdateVideo) int
+		UpdateVideoJob          func(childComplexity int, jobID string, status string) int
 		VerifyEmail             func(childComplexity int, id string, email string) int
 		VerifyToken             func(childComplexity int, id string, token string) int
 	}
@@ -263,6 +264,7 @@ type ComplexityRoot struct {
 		GetActivity       func(childComplexity int, channelID string) int
 		GetChannelViewers func(childComplexity int, channelID string, userID string) int
 		GetMessages       func(childComplexity int, channelID string, userID string) int
+		GetVideoJob       func(childComplexity int, jobID string) int
 		GetVideoViewers   func(childComplexity int, videoID string) int
 	}
 
@@ -317,6 +319,13 @@ type ComplexityRoot struct {
 		Views     func(childComplexity int) int
 	}
 
+	VideoJob struct {
+		ID        func(childComplexity int) int
+		JobID     func(childComplexity int) int
+		Status    func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+	}
+
 	VideoView struct {
 		CreatedAt func(childComplexity int) int
 		ID        func(childComplexity int) int
@@ -348,10 +357,11 @@ type MutationResolver interface {
 	CreateChannelViewer(ctx context.Context, channelID string, userID string) (int, error)
 	UpdateStreamKey(ctx context.Context, userID string, streamkey string, playbackID string) (bool, error)
 	PostMessage(ctx context.Context, input *model.NewMessage) (*model.Message, error)
-	CreateVideo(ctx context.Context, input model.NewVideo) (bool, error)
+	CreateVideo(ctx context.Context, input model.NewVideo) (string, error)
 	CreateVideoView(ctx context.Context, input model.NewVideoView) (int, error)
 	UpdateVideo(ctx context.Context, id string, input model.UpdateVideo) (bool, error)
 	DeleteVideo(ctx context.Context, id string) (bool, error)
+	UpdateVideoJob(ctx context.Context, jobID string, status string) (bool, error)
 	FollowUser(ctx context.Context, input model.FollowInput) (*model.Follower, error)
 	RemoveFollower(ctx context.Context, userID string, followerID string) (bool, error)
 	UpdateChatIdentity(ctx context.Context, userID string, input model.ChatIdentityInput) (bool, error)
@@ -404,6 +414,7 @@ type SubscriptionResolver interface {
 	GetVideoViewers(ctx context.Context, videoID string) (<-chan int, error)
 	GetChannelViewers(ctx context.Context, channelID string, userID string) (<-chan int, error)
 	GetActivity(ctx context.Context, channelID string) (<-chan *model.Activity, error)
+	GetVideoJob(ctx context.Context, jobID string) (<-chan *model.VideoJob, error)
 }
 
 type executableSchema struct {
@@ -1309,6 +1320,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateVideo(childComplexity, args["id"].(string), args["input"].(model.UpdateVideo)), true
 
+	case "Mutation.updateVideoJob":
+		if e.complexity.Mutation.UpdateVideoJob == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateVideoJob_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateVideoJob(childComplexity, args["job_id"].(string), args["status"].(string)), true
+
 	case "Mutation.verifyEmail":
 		if e.complexity.Mutation.VerifyEmail == nil {
 			break
@@ -1839,6 +1862,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Subscription.GetMessages(childComplexity, args["channel_id"].(string), args["user_id"].(string)), true
 
+	case "Subscription.getVideoJob":
+		if e.complexity.Subscription.GetVideoJob == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_getVideoJob_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.GetVideoJob(childComplexity, args["job_id"].(string)), true
+
 	case "Subscription.getVideoViewers":
 		if e.complexity.Subscription.GetVideoViewers == nil {
 			break
@@ -2124,6 +2159,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Video.Views(childComplexity), true
 
+	case "VideoJob.id":
+		if e.complexity.VideoJob.ID == nil {
+			break
+		}
+
+		return e.complexity.VideoJob.ID(childComplexity), true
+
+	case "VideoJob.job_id":
+		if e.complexity.VideoJob.JobID == nil {
+			break
+		}
+
+		return e.complexity.VideoJob.JobID(childComplexity), true
+
+	case "VideoJob.status":
+		if e.complexity.VideoJob.Status == nil {
+			break
+		}
+
+		return e.complexity.VideoJob.Status(childComplexity), true
+
+	case "VideoJob.updated_at":
+		if e.complexity.VideoJob.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.VideoJob.UpdatedAt(childComplexity), true
+
 	case "VideoView.created_at":
 		if e.complexity.VideoView.CreatedAt == nil {
 			break
@@ -2203,6 +2266,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateVideo,
 		ec.unmarshalInputUserStripeInput,
 		ec.unmarshalInputUsersInChatInput,
+		ec.unmarshalInputVideoJobInput,
 	)
 	first := true
 
@@ -2858,6 +2922,30 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 		}
 	}
 	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateVideoJob_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["job_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("job_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["job_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["status"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["status"] = arg1
 	return args, nil
 }
 
@@ -3581,6 +3669,21 @@ func (ec *executionContext) field_Subscription_getMessages_args(ctx context.Cont
 		}
 	}
 	args["user_id"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_getVideoJob_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["job_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("job_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["job_id"] = arg0
 	return args, nil
 }
 
@@ -8266,10 +8369,10 @@ func (ec *executionContext) _Mutation_createVideo(ctx context.Context, field gra
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(bool); ok {
+		if data, ok := tmp.(string); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8281,9 +8384,9 @@ func (ec *executionContext) _Mutation_createVideo(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createVideo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8293,7 +8396,7 @@ func (ec *executionContext) fieldContext_Mutation_createVideo(ctx context.Contex
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	defer func() {
@@ -8529,6 +8632,81 @@ func (ec *executionContext) fieldContext_Mutation_deleteVideo(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteVideo_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateVideoJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateVideoJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateVideoJob(rctx, fc.Args["job_id"].(string), fc.Args["status"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Auth == nil {
+				return nil, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateVideoJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateVideoJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -12846,6 +13024,85 @@ func (ec *executionContext) fieldContext_Subscription_getActivity(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_getVideoJob(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_getVideoJob(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().GetVideoJob(rctx, fc.Args["job_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.VideoJob):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNVideoJob2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideoJob(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_getVideoJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_VideoJob_id(ctx, field)
+			case "job_id":
+				return ec.fieldContext_VideoJob_job_id(ctx, field)
+			case "status":
+				return ec.fieldContext_VideoJob_status(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_VideoJob_updated_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VideoJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_getVideoJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Token_id(ctx context.Context, field graphql.CollectedField, obj *model.Token) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Token_id(ctx, field)
 	if err != nil {
@@ -14593,6 +14850,182 @@ func (ec *executionContext) _Video_updated_at(ctx context.Context, field graphql
 func (ec *executionContext) fieldContext_Video_updated_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Video",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VideoJob_id(ctx context.Context, field graphql.CollectedField, obj *model.VideoJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VideoJob_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNUUID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VideoJob_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VideoJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UUID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VideoJob_job_id(ctx context.Context, field graphql.CollectedField, obj *model.VideoJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VideoJob_job_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.JobID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VideoJob_job_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VideoJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VideoJob_status(ctx context.Context, field graphql.CollectedField, obj *model.VideoJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VideoJob_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VideoJob_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VideoJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VideoJob_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.VideoJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VideoJob_updated_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VideoJob_updated_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VideoJob",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -17485,6 +17918,40 @@ func (ec *executionContext) unmarshalInputUsersInChatInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputVideoJobInput(ctx context.Context, obj interface{}) (model.VideoJobInput, error) {
+	var it model.VideoJobInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"job_id", "status"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "job_id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("job_id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.JobID = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -18462,6 +18929,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteVideo":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteVideo(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateVideoJob":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateVideoJob(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -19487,6 +19961,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_getChannelViewers(ctx, fields[0])
 	case "getActivity":
 		return ec._Subscription_getActivity(ctx, fields[0])
+	case "getVideoJob":
+		return ec._Subscription_getVideoJob(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -19794,6 +20270,60 @@ func (ec *executionContext) _Video(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "updated_at":
 			out.Values[i] = ec._Video_updated_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var videoJobImplementors = []string{"VideoJob"}
+
+func (ec *executionContext) _VideoJob(ctx context.Context, sel ast.SelectionSet, obj *model.VideoJob) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, videoJobImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VideoJob")
+		case "id":
+			out.Values[i] = ec._VideoJob_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "job_id":
+			out.Values[i] = ec._VideoJob_job_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._VideoJob_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updated_at":
+			out.Values[i] = ec._VideoJob_updated_at(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -20966,6 +21496,20 @@ func (ec *executionContext) marshalNVideo2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑ
 		return graphql.Null
 	}
 	return ec._Video(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNVideoJob2githubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideoJob(ctx context.Context, sel ast.SelectionSet, v model.VideoJob) graphql.Marshaler {
+	return ec._VideoJob(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNVideoJob2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideoJob(ctx context.Context, sel ast.SelectionSet, v *model.VideoJob) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._VideoJob(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNVideosEdge2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideosEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.VideosEdge) graphql.Marshaler {

@@ -12,7 +12,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func (db *BUN) CreateVideo(input model.NewVideo) (bool, error) {
+func (db *BUN) CreateVideo(input model.NewVideo) (string, error) {
 	var id = uuid.New().String()
 	var now = time.Now()
 
@@ -23,11 +23,28 @@ func (db *BUN) CreateVideo(input model.NewVideo) (bool, error) {
 
 	if err != nil {
 		fmt.Println("Error found when creating video: ", err)
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (db *BUN) CreateVideoJob(job_id string, status string) (bool, error) {
+	id := uuid.New().String()
+
+	_, err := db.client.NewRaw(
+		"INSERT INTO video_jobs (id, job_id, status) VALUES (?, ?, ?) ON CONFLICT (job_id) DO UPDATE job_id=EXCLUDED.job_id, status=EXCLUDED.status",
+		id, job_id, status,
+	).Exec(context.Background())
+
+	if err != nil {
+		fmt.Println("Error found when creating video job: ", err)
 		return false, err
 	}
 
 	return true, nil
 }
+
 func (db *BUN) CreateChannelViewer(channelID string, userID string) (int, error) {
 
 	var now = time.Now()

@@ -102,6 +102,18 @@ type Video {
     updated_at: Time!
 }
 
+type VideoJob {
+    id: UUID!
+    job_id: String!
+    status: String!
+    updated_at: Time!
+}
+
+input VideoJobInput {
+    job_id: String!
+    status: String!
+}
+
 type VideosResult {
     edges: [VideosEdge!]!
     pageInfo: PageInfo!
@@ -329,6 +341,7 @@ type Subscription {
     getVideoViewers(video_id: String!): Int!
     getChannelViewers(channel_id: String!, user_id: String!): Int!
     getActivity(channel_id: String!): Activity!
+    getVideoJob(job_id: String!): VideoJob!
 }
 
 type Query {
@@ -398,10 +411,11 @@ type Mutation {
     postMessage(input: NewMessage): Message! @auth
 
     # Handle Videos
-    createVideo(input: NewVideo!): Boolean! @auth
+    createVideo(input: NewVideo!): String! @auth
     createVideoView(input: NewVideoView!): Int! @auth
     updateVideo(id: String!, input: UpdateVideo!): Boolean! @auth
     deleteVideo(id: String!): Boolean! @auth
+    updateVideoJob(job_id: String!, status: String!): Boolean! @auth
 
     # Handle Followers
     followUser(input: FollowInput!): Follower! @auth
