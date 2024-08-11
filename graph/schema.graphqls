@@ -429,7 +429,7 @@ type Mutation {
     createVideoView(input: NewVideoView!): Int! @auth
     updateVideo(id: String!, input: UpdateVideo!): Boolean! @auth
     deleteVideo(id: String!): Boolean! @auth
-    updateVideoJob(job_id: String!, status: String!): Boolean! @auth
+    updateVideoJob(job_id: String!, status: String!): Boolean!
 
     # Handle Followers
     followUser(input: FollowInput!): Follower! @auth
