@@ -372,6 +372,11 @@ func (r *queryResolver) CountChannelVideos(ctx context.Context, channelID string
 	return database.DB.CountChannelVideos(channelID)
 }
 
+// GetVideoJob is the resolver for the getVideoJob field.
+func (r *queryResolver) GetVideoJob(ctx context.Context, jobID string) (string, error) {
+	return database.DB.GetVideoJob(jobID)
+}
+
 // SearchVideos is the resolver for the searchVideos field.
 func (r *queryResolver) SearchVideos(ctx context.Context, query string, first int, after string) (*model.VideosResult, error) {
 	return database.DB.SearchVideos(query, first, after)

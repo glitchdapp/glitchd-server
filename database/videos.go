@@ -45,6 +45,18 @@ func (db *BUN) CreateVideoJob(job_id string, status string) (string, error) {
 	return status, nil
 }
 
+func (db *BUN) GetVideoJob(job_id string) (string, error) {
+	var job model.VideoJob
+	err := db.client.NewSelect().Model(&job).Where("job_id = ?", job_id).Scan(context.Background())
+	if err != nil {
+		fmt.Println("Could not get job status: ", err)
+		return "", err
+	}
+
+	return job.Status, nil
+
+}
+
 func (db *BUN) CreateChannelViewer(channelID string, userID string) (int, error) {
 
 	var now = time.Now()

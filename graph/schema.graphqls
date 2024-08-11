@@ -370,6 +370,7 @@ type Query {
     getVideoViews(video_id: String!): Int!
     getChannelViews(channel_id: String!): Int!
     countChannelVideos(channel_id: String!): Int!
+    getVideoJob(job_id: String!): String!
     searchVideos(query: String!, first: Int!, after: String!): VideosResult
 
     # Handle Connections

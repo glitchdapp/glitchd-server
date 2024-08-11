@@ -259,6 +259,7 @@ type ComplexityRoot struct {
 		GetUserMembership           func(childComplexity int, userID string, channelID string) int
 		GetUsersInChat              func(childComplexity int, channelID string) int
 		GetVideoByID                func(childComplexity int, id string) int
+		GetVideoJob                 func(childComplexity int, jobID string) int
 		GetVideoViews               func(childComplexity int, videoID string) int
 		GetVideos                   func(childComplexity int, channelID string, first int, after string) int
 		GetVideosByCategory         func(childComplexity int, category string, first int, after string) int
@@ -397,6 +398,7 @@ type QueryResolver interface {
 	GetVideoViews(ctx context.Context, videoID string) (int, error)
 	GetChannelViews(ctx context.Context, channelID string) (int, error)
 	CountChannelVideos(ctx context.Context, channelID string) (int, error)
+	GetVideoJob(ctx context.Context, jobID string) (string, error)
 	SearchVideos(ctx context.Context, query string, first int, after string) (*model.VideosResult, error)
 	GetFollowers(ctx context.Context, userID string, first int, after string) (*model.FollowersResult, error)
 	GetFollowing(ctx context.Context, followerID string, first int, after string) (*model.FollowersResult, error)
@@ -1794,6 +1796,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetVideoByID(childComplexity, args["id"].(string)), true
+
+	case "Query.getVideoJob":
+		if e.complexity.Query.GetVideoJob == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getVideoJob_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetVideoJob(childComplexity, args["job_id"].(string)), true
 
 	case "Query.getVideoViews":
 		if e.complexity.Query.GetVideoViews == nil {
@@ -3519,6 +3533,21 @@ func (ec *executionContext) field_Query_getVideoById_args(ctx context.Context, r
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getVideoJob_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["job_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("job_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["job_id"] = arg0
 	return args, nil
 }
 
@@ -11403,6 +11432,61 @@ func (ec *executionContext) fieldContext_Query_countChannelVideos(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_countChannelVideos_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getVideoJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getVideoJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetVideoJob(rctx, fc.Args["job_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getVideoJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getVideoJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -19785,6 +19869,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_countChannelVideos(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getVideoJob":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getVideoJob(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
