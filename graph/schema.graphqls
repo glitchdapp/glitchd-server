@@ -15,6 +15,16 @@ type PageInfo {
     hasNextPage: Boolean!
 }
 
+type Logs {
+    id: UUID!
+    data: String!
+    created_at: Time!
+}
+
+input LogInput {
+    data: String!
+}
+
 type User {
     id: UUID!
     email: String!
@@ -390,6 +400,10 @@ type Query {
 }
 
 type Mutation {
+
+    # Glitchd Logs cause all else sucks! Anyone can send a request to it who cares.
+    createLog(data: String!): Boolean!
+
     # Manage users
     updateUser(id: String!, input: UpdateUser): Boolean! @auth
     updateUserPhoto(id: String!, photo: String!): Boolean! @auth

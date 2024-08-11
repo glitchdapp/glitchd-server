@@ -13,6 +13,11 @@ import (
 	"github.com/glitchd/glitchd-server/graph/model"
 )
 
+// CreateLog is the resolver for the createLog field.
+func (r *mutationResolver) CreateLog(ctx context.Context, data string) (bool, error) {
+	return database.DB.CreateLog(data)
+}
+
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input *model.UpdateUser) (bool, error) {
 	return database.DB.UpdateUser(id, input)

@@ -111,6 +111,16 @@ type FollowersResult struct {
 	PageInfo *PageInfo        `json:"pageInfo"`
 }
 
+type LogInput struct {
+	Data string `json:"data"`
+}
+
+type Logs struct {
+	ID        string    `json:"id"`
+	Data      string    `json:"data"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Membership struct {
 	ID        string    `json:"id"`
 	ChannelID string    `json:"channel_id"`
