@@ -19,16 +19,18 @@ type Activity struct {
 }
 
 type Channel struct {
-	ID          string    `json:"id"`
-	Broadcaster *User     `json:"broadcaster"`
-	Title       string    `json:"title"`
-	Category    string    `json:"category"`
-	Streamkey   string    `json:"streamkey"`
-	PlaybackID  string    `json:"playback_id"`
-	Tags        []string  `json:"tags"`
-	IsBranded   bool      `json:"is_branded"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID           string    `json:"id"`
+	Broadcaster  *User     `json:"broadcaster"`
+	UserID       string    `json:"user_id"`
+	Title        string    `json:"title"`
+	Notification string    `json:"notification"`
+	Category     string    `json:"category"`
+	Streamkey    string    `json:"streamkey"`
+	PlaybackID   string    `json:"playback_id"`
+	Tags         string    `json:"tags"`
+	IsBranded    bool      `json:"is_branded"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type ChannelFlakes struct {
@@ -39,15 +41,21 @@ type ChannelFlakes struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type ChannelFlakesLeaders struct {
+	SenderID string `json:"sender_id"`
+	Sender   *User  `json:"sender"`
+	Amount   int    `json:"amount"`
+}
+
 type ChannelInput struct {
-	BroadcasterID string   `json:"broadcaster_id"`
-	Title         string   `json:"title"`
-	Category      string   `json:"category"`
-	Streamkey     string   `json:"streamkey"`
-	PlaybackID    string   `json:"playback_id"`
-	Viewers       string   `json:"viewers"`
-	Tags          []string `json:"tags"`
-	IsBranded     bool     `json:"is_branded"`
+	BroadcasterID string `json:"broadcaster_id"`
+	Title         string `json:"title"`
+	Notification  string `json:"notification"`
+	Category      string `json:"category"`
+	Streamkey     string `json:"streamkey"`
+	PlaybackID    string `json:"playback_id"`
+	Tags          string `json:"tags"`
+	IsBranded     bool   `json:"is_branded"`
 }
 
 type ChannelViewer struct {
@@ -122,7 +130,7 @@ type MembershipDetails struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Badges      []string  `json:"badges"`
-	Cost        int       `json:"cost"`
+	Cost        string    `json:"cost"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -132,7 +140,7 @@ type MembershipDetailsInput struct {
 	Tier        int    `json:"tier"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	Cost        int    `json:"cost"`
+	Cost        string `json:"cost"`
 }
 
 type Message struct {

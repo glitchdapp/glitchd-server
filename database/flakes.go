@@ -128,3 +128,21 @@ func (db *BUN) GetChannelFlakes(channel_id string) ([]*model.ChannelFlakes, erro
 
 	return channel_flakes, nil
 }
+func (db *BUN) GetChannelFlakesLeaders(channel_id string) ([]*model.ChannelFlakesLeaders, error) {
+	var channel_flakes []*model.ChannelFlakesLeaders
+
+	err := db.client.NewRaw(
+		"SELECT sender_id, SUM(amount) as amount FROM channel_flakes WHERE channel_id = ? AND created_at >= date_trunc('month', current_date) GROUP BY sender_id ORDER BY amount DESC LIMIT 10",
+		channel_id).Scan(context.Background(), &channel_flakes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for index, channel_flake := range channel_flakes {
+		user, _ := db.GetUser(channel_flake.SenderID)
+		channel_flakes[index].Sender = user
+	}
+
+	return channel_flakes, nil
+}

@@ -13,8 +13,8 @@ func (db *BUN) CreateChannel(user_id string, input model.ChannelInput) (bool, er
 	now := time.Now()
 
 	res, err := db.client.NewRaw(
-		"INSERT INTO channels (id, user_id, title, category, streamkey, playback_id, tags, is_branded, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-		id, input.BroadcasterID, input.Title, input.Category, input.Streamkey, input.PlaybackID, input.Tags, now,
+		"INSERT INTO channels (id, user_id, title, notification, category, streamkey, playback_id, tags, is_branded, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET title=EXCLUDED.title, notification=EXCLUDED.notification, tags=EXCLUDED.tags",
+		id, input.BroadcasterID, input.Title, input.Notification, input.Category, input.Streamkey, input.PlaybackID, input.Tags, input.IsBranded, now,
 	).Exec(context.Background())
 
 	if err != nil {
@@ -56,7 +56,7 @@ func (db *BUN) UpdateStreamkey(user_id string, streamkey string, playback_id str
 }
 
 func (db *BUN) GetChannelInfo(user_id string) (*model.Channel, error) {
-	var channel *model.Channel
+	var channel model.Channel
 	err := db.client.NewRaw("SELECT * FROM channels WHERE user_id = ?", user_id).Scan(context.Background(), &channel)
 
 	if err != nil {
@@ -66,5 +66,5 @@ func (db *BUN) GetChannelInfo(user_id string) (*model.Channel, error) {
 	user, _ := db.GetUser(user_id)
 	channel.Broadcaster = user
 
-	return channel, nil
+	return &channel, nil
 }

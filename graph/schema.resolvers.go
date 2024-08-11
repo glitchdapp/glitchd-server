@@ -410,6 +410,11 @@ func (r *queryResolver) GetUserMembership(ctx context.Context, userID string, ch
 	return database.DB.GetUserMembership(userID, channelID)
 }
 
+// GetChannelMembershipDetails is the resolver for the getChannelMembershipDetails field.
+func (r *queryResolver) GetChannelMembershipDetails(ctx context.Context, channelID string) ([]*model.MembershipDetails, error) {
+	return database.DB.GetChannelMembershipDetails(channelID)
+}
+
 // GetMembershipByID is the resolver for the getMembershipById field.
 func (r *queryResolver) GetMembershipByID(ctx context.Context, id string) (*model.Membership, error) {
 	return database.DB.GetMembershipById(id)
@@ -433,6 +438,11 @@ func (r *queryResolver) GetFlakes(ctx context.Context, userID string) (int, erro
 // GetChannelFlakes is the resolver for the getChannelFlakes field.
 func (r *queryResolver) GetChannelFlakes(ctx context.Context, channelID string) ([]*model.ChannelFlakes, error) {
 	return database.DB.GetChannelFlakes(channelID)
+}
+
+// GetChannelFlakesLeaders is the resolver for the getChannelFlakesLeaders field.
+func (r *queryResolver) GetChannelFlakesLeaders(ctx context.Context, channelID string) ([]*model.ChannelFlakesLeaders, error) {
+	return database.DB.GetChannelFlakesLeaders(channelID)
 }
 
 // GetMessages is the resolver for the getMessages field.
@@ -542,6 +552,9 @@ type subscriptionResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *mutationResolver) UpdateMembershipDetails(ctx context.Context, input model.MembershipDetailsInput) (bool, error) {
+	panic(fmt.Errorf("not implemented: UpdateMembershipDetails - updateMembershipDetails"))
+}
 func (r *mutationResolver) SendFlakes(ctx context.Context, channelID string, userID string, amount int, message string) (bool, error) {
 	return database.DB.SendFlakes(channelID, userID, amount)
 }

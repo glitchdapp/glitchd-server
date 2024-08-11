@@ -61,11 +61,13 @@ type Token {
 type Channel {
     id: UUID!
     broadcaster: User!
+    user_id: String!
     title: String!
+    notification: String!
     category: String!
     streamkey: String!
     playback_id: String!
-    tags: [String!]!
+    tags: String!
     is_branded: Boolean!
     created_at: Time!
     updated_at: Time!
@@ -74,11 +76,11 @@ type Channel {
 input ChannelInput {
     broadcaster_id: String!
     title: String!
+    notification: String!
     category: String!
     streamkey: String!
     playback_id: String!
-    viewers: String!
-    tags: [String!]!
+    tags: String!
     is_branded: Boolean!
 }
 
@@ -251,7 +253,7 @@ type MembershipDetails {
     name: String!
     description: String!
     badges: [String!]!
-    cost: Int!
+    cost: String!
     created_at: Time!
     updated_at: Time!
 }
@@ -261,7 +263,7 @@ input MembershipDetailsInput {
     tier: Int!
     name: String!
     description: String!
-    cost: Int!
+    cost: String!
 }
 
 type Follower {
@@ -316,6 +318,12 @@ type ChannelFlakes {
     created_at: Time!
 }
 
+type ChannelFlakesLeaders {
+    sender_id: String!
+    sender: User!
+    amount: Int!
+}
+
 type Subscription {
     getMessages(channel_id: String!, user_id: String!): Message!
     getVideoViewers(video_id: String!): Int!
@@ -357,6 +365,7 @@ type Query {
     getPaymentBySession(session_id: String!): Payment!
 
     getUserMembership(user_id: String!, channel_id: String!): Membership! @auth
+    getChannelMembershipDetails(channel_id: String!): [MembershipDetails!]! @auth
     getMembershipById(id: String!): Membership! @auth
     getChannelMemberships(channel_id: String!): [Membership!]! @auth
 
@@ -364,6 +373,7 @@ type Query {
 
     getFlakes(user_id: String!): Int!
     getChannelFlakes(channel_id: String!): [ChannelFlakes!]!
+    getChannelFlakesLeaders(channel_id: String!): [ChannelFlakesLeaders!]!
 }
 
 type Mutation {

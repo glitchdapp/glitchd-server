@@ -16,7 +16,7 @@ func (db *BUN) CreateMembershipDetails(input model.MembershipDetailsInput) (bool
 	now := time.Now()
 
 	res, err := db.client.NewRaw(
-		"INSERT INTO ? (id, channel_id, tier, name, description, cost, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO ? (id, channel_id, tier, name, description, cost, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (channel_id, tier) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, cost=EXCLUDED.cost, updated_at=EXCLUDED.updated_at",
 		bun.Ident("membership_details"), id, input.ChannelID, input.Tier, input.Name, input.Description, input.Cost, now, now,
 	).Exec(context.Background())
 
@@ -145,6 +145,18 @@ func (db *BUN) GetChannelMemberships(channel_id string) ([]*model.Membership, er
 	var result []*model.Membership
 
 	err := db.client.NewRaw("SELECT * FROM memberships WHERE channel_id = ? AND is_active = 'true'", channel_id).Scan(context.Background(), &result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (db *BUN) GetChannelMembershipDetails(channelID string) ([]*model.MembershipDetails, error) {
+	var result []*model.MembershipDetails
+
+	err := db.client.NewRaw("SELECT * FROM membership_details WHERE channel_id = ?", channelID).Scan(context.Background(), &result)
 
 	if err != nil {
 		return nil, err

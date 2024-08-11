@@ -17,8 +17,9 @@ CREATE TABLE IF NOT EXISTS membership_details (
     name TEXT,
     description TEXT,
     badges TEXT[],
-    cost INTEGER NOT NULL DEFAULT 0,
+    cost TEXT NOT NULL DEFAULT 0,
     created_at timestamp NOT NULL,
-    updated_at timestamp NOT NULL DEFAULT NOW()
+    updated_at timestamp NOT NULL DEFAULT NOW(),
+    UNIQUE(channel_id, tier)
 );
 

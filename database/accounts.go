@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/glitchd/glitchd-server/graph/model"
@@ -60,16 +61,17 @@ func (db *BUN) registerUser(email string) (*model.User, bool) {
 	var now = time.Now()
 	id := uuid.New().String()
 
+	username := strings.Split(email, "@")
 	data := model.User{
 		ID:        id,
 		Email:     email,
-		Username:  id,
+		Username:  username[0],
 		CreatedAt: now,
 	}
 
 	res, err := db.client.NewRaw(
 		"INSERT INTO ? (id, email, username, created_at) VALUES (?, ?, ?, ?)",
-		bun.Ident("users"), id, email, id, now,
+		bun.Ident("users"), id, email, username[0], now,
 	).Exec(context.Background())
 
 	if err != nil {
@@ -482,6 +484,18 @@ func (db *BUN) VerifyToken(id string, token string) (string, error) {
 			if err == nil {
 				// delete token
 				db.client.NewDelete().Model(&tokenModel).Where("token = ?", token).Scan(context.Background())
+			}
+
+			// let initialize chat identity if it does not exist.
+			_, errs := db.GetChatIdentity(user.ID)
+			if errs != nil {
+				fmt.Println("Verify Account: Could not load chat identity something went wrong. ", errs)
+				// update chat identity.
+				input := model.ChatIdentityInput{
+					Color: "#FF0000",
+					Badge: "",
+				}
+				db.UpdateChatIdentity(user.ID, input)
 			}
 
 			return jwtString, nil
