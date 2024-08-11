@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS channel_viewers (
 
 CREATE TABLE IF NOT EXISTS video_jobs (
     id UUID NOT NULL,
-    job_id TEXT NOT NULL,
+    job_id TEXT NOT NULL UNIQUE,
     status TEXT NOT NULL,
     updated_at timestamp NOT NULL DEFAULT NOW()
 );

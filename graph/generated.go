@@ -422,7 +422,7 @@ type SubscriptionResolver interface {
 	GetVideoViewers(ctx context.Context, videoID string) (<-chan int, error)
 	GetChannelViewers(ctx context.Context, channelID string, userID string) (<-chan int, error)
 	GetActivity(ctx context.Context, channelID string) (<-chan *model.Activity, error)
-	GetVideoJob(ctx context.Context, jobID string) (<-chan *model.VideoJob, error)
+	GetVideoJob(ctx context.Context, jobID string) (<-chan string, error)
 }
 
 type executableSchema struct {
@@ -13276,7 +13276,7 @@ func (ec *executionContext) _Subscription_getVideoJob(ctx context.Context, field
 	}
 	return func(ctx context.Context) graphql.Marshaler {
 		select {
-		case res, ok := <-resTmp.(<-chan *model.VideoJob):
+		case res, ok := <-resTmp.(<-chan string):
 			if !ok {
 				return nil
 			}
@@ -13284,7 +13284,7 @@ func (ec *executionContext) _Subscription_getVideoJob(ctx context.Context, field
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalNVideoJob2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideoJob(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalNString2string(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -13300,17 +13300,7 @@ func (ec *executionContext) fieldContext_Subscription_getVideoJob(ctx context.Co
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_VideoJob_id(ctx, field)
-			case "job_id":
-				return ec.fieldContext_VideoJob_job_id(ctx, field)
-			case "status":
-				return ec.fieldContext_VideoJob_status(ctx, field)
-			case "updated_at":
-				return ec.fieldContext_VideoJob_updated_at(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type VideoJob", field.Name)
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	defer func() {
@@ -21803,20 +21793,6 @@ func (ec *executionContext) marshalNVideo2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑ
 		return graphql.Null
 	}
 	return ec._Video(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNVideoJob2githubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideoJob(ctx context.Context, sel ast.SelectionSet, v model.VideoJob) graphql.Marshaler {
-	return ec._VideoJob(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNVideoJob2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideoJob(ctx context.Context, sel ast.SelectionSet, v *model.VideoJob) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._VideoJob(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNVideosEdge2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐVideosEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.VideosEdge) graphql.Marshaler {

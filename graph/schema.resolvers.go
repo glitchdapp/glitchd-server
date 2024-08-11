@@ -186,7 +186,19 @@ func (r *mutationResolver) DeleteVideo(ctx context.Context, id string) (bool, er
 
 // UpdateVideoJob is the resolver for the updateVideoJob field.
 func (r *mutationResolver) UpdateVideoJob(ctx context.Context, jobID string, status string) (bool, error) {
-	return database.DB.CreateVideoJob(jobID, status)
+	jobs := r.getJobStatus(jobID)
+	updated, err := database.DB.CreateVideoJob(jobID, status)
+
+	jobs.Observers.Range(func(_, v any) bool {
+		observer := v.(*JobObserver)
+
+		if observer.JobID == jobs.JobID {
+			observer.Status <- status
+		}
+		return true
+	})
+
+	return updated, err
 }
 
 // FollowUser is the resolver for the followUser field.
@@ -544,8 +556,23 @@ func (r *subscriptionResolver) GetActivity(ctx context.Context, channelID string
 }
 
 // GetVideoJob is the resolver for the getVideoJob field.
-func (r *subscriptionResolver) GetVideoJob(ctx context.Context, jobID string) (<-chan *model.VideoJob, error) {
-	panic(fmt.Errorf("not implemented: GetVideoJob - getVideoJob"))
+func (r *subscriptionResolver) GetVideoJob(ctx context.Context, jobID string) (<-chan string, error) {
+	room := r.getJobStatus(jobID)
+
+	id := randString(8)
+	events := make(chan string, 1)
+
+	go func() {
+		<-ctx.Done()
+		room.Observers.Delete(id)
+	}()
+
+	room.Observers.Store(id, &JobObserver{
+		JobID:  jobID,
+		Status: events,
+	})
+
+	return events, nil
 }
 
 // Mutation returns MutationResolver implementation.
@@ -567,6 +594,9 @@ type subscriptionResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) GetVideoByJobID(ctx context.Context, jobID string) (*model.Video, error) {
+	panic(fmt.Errorf("not implemented: GetVideoByJobID - getVideoByJobId"))
+}
 func (r *mutationResolver) UpdateMembershipDetails(ctx context.Context, input model.MembershipDetailsInput) (bool, error) {
 	panic(fmt.Errorf("not implemented: UpdateMembershipDetails - updateMembershipDetails"))
 }

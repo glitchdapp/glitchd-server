@@ -16,6 +16,7 @@ type Resolver struct {
 	Viewers        sync.Map
 	ChannelViewers sync.Map
 	Activity       sync.Map
+	Job            sync.Map
 }
 
 type ChatResolver struct {
@@ -66,6 +67,17 @@ type ChannelPage struct {
 	Observers sync.Map
 }
 
+type JobObserver struct {
+	JobID  string
+	Status chan string
+}
+
+type JobPage struct {
+	JobID     string
+	Status    string
+	Observers sync.Map
+}
+
 type ActivityResolver struct {
 	ChannelID         string
 	Activity          *model.Activity
@@ -107,6 +119,15 @@ func (r *Resolver) getChannelViewers(channelID string) *ChannelPage {
 	})
 
 	return page.(*ChannelPage)
+}
+
+func (r *Resolver) getJobStatus(jobID string) *JobPage {
+	page, _ := r.Job.LoadOrStore(jobID, &JobPage{
+		JobID:     jobID,
+		Observers: sync.Map{},
+	})
+
+	return page.(*JobPage)
 }
 
 func (r *Resolver) getChannelActivity(channelID string) *ActivityPage {

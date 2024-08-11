@@ -351,7 +351,7 @@ type Subscription {
     getVideoViewers(video_id: String!): Int!
     getChannelViewers(channel_id: String!, user_id: String!): Int!
     getActivity(channel_id: String!): Activity!
-    getVideoJob(job_id: String!): VideoJob!
+    getVideoJob(job_id: String!): String!
 }
 
 type Query {
