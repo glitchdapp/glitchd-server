@@ -129,8 +129,8 @@ func (db *BUN) GetMembershipById(id string) (*model.Membership, error) {
 	return &result, nil
 }
 
-func (db *BUN) GetUserMembership(user_id string, channel_id string) (*model.Membership, error) {
-	var result model.Membership
+func (db *BUN) GetUserMembership(user_id string, channel_id string) ([]*model.Membership, error) {
+	var result []*model.Membership
 
 	err := db.client.NewRaw("SELECT * FROM memberships WHERE user_id = ? AND channel_id = ? AND is_active = 'true'", user_id, channel_id).Scan(context.Background(), &result)
 
@@ -138,7 +138,7 @@ func (db *BUN) GetUserMembership(user_id string, channel_id string) (*model.Memb
 		return nil, err
 	}
 
-	return &result, nil
+	return result, nil
 }
 
 func (db *BUN) GetChannelMemberships(channel_id string) ([]*model.Membership, error) {

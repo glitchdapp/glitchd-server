@@ -410,7 +410,7 @@ type QueryResolver interface {
 	GetUsersInChat(ctx context.Context, channelID string) ([]*model.User, error)
 	GetRecentActivity(ctx context.Context, channelID string) ([]*model.Activity, error)
 	GetPaymentBySession(ctx context.Context, sessionID string) (*model.Payment, error)
-	GetUserMembership(ctx context.Context, userID string, channelID string) (*model.Membership, error)
+	GetUserMembership(ctx context.Context, userID string, channelID string) ([]*model.Membership, error)
 	GetChannelMembershipDetails(ctx context.Context, channelID string) ([]*model.MembershipDetails, error)
 	GetMembershipByID(ctx context.Context, id string) (*model.Membership, error)
 	GetChannelMemberships(ctx context.Context, channelID string) ([]*model.Membership, error)
@@ -12244,10 +12244,10 @@ func (ec *executionContext) _Query_getUserMembership(ctx context.Context, field 
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.Membership); ok {
+		if data, ok := tmp.([]*model.Membership); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/glitchd/glitchd-server/graph/model.Membership`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/glitchd/glitchd-server/graph/model.Membership`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12259,9 +12259,9 @@ func (ec *executionContext) _Query_getUserMembership(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Membership)
+	res := resTmp.([]*model.Membership)
 	fc.Result = res
-	return ec.marshalNMembership2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐMembership(ctx, field.Selections, res)
+	return ec.marshalNMembership2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐMembershipᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_getUserMembership(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {

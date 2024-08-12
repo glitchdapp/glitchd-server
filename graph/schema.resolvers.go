@@ -433,7 +433,7 @@ func (r *queryResolver) GetPaymentBySession(ctx context.Context, sessionID strin
 }
 
 // GetUserMembership is the resolver for the getUserMembership field.
-func (r *queryResolver) GetUserMembership(ctx context.Context, userID string, channelID string) (*model.Membership, error) {
+func (r *queryResolver) GetUserMembership(ctx context.Context, userID string, channelID string) ([]*model.Membership, error) {
 	return database.DB.GetUserMembership(userID, channelID)
 }
 
@@ -571,8 +571,6 @@ func (r *subscriptionResolver) GetVideoJob(ctx context.Context, jobID string) (<
 		<-ctx.Done()
 		room.Observers.Delete(id)
 	}()
-
-	fmt.Println("jobs: ", jobID, events)
 
 	room.Observers.Store(id, &JobObserver{
 		JobID:  jobID,

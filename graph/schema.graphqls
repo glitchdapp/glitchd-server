@@ -388,7 +388,7 @@ type Query {
 
     getPaymentBySession(session_id: String!): Payment!
 
-    getUserMembership(user_id: String!, channel_id: String!): Membership! @auth
+    getUserMembership(user_id: String!, channel_id: String!): [Membership!]! @auth
     getChannelMembershipDetails(channel_id: String!): [MembershipDetails!]! @auth
     getMembershipById(id: String!): Membership! @auth
     getChannelMemberships(channel_id: String!): [Membership!]! @auth
