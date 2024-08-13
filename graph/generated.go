@@ -185,6 +185,7 @@ type ComplexityRoot struct {
 		CreateMembership        func(childComplexity int, input model.NewMembership) int
 		CreateMembershipDetails func(childComplexity int, input model.MembershipDetailsInput) int
 		CreatePayment           func(childComplexity int, input model.PaymentInput) int
+		CreateUser              func(childComplexity int, input *model.NewUser) int
 		CreateVideo             func(childComplexity int, input model.NewVideo) int
 		CreateVideoView         func(childComplexity int, input model.NewVideoView) int
 		DeleteMembership        func(childComplexity int, id string) int
@@ -289,6 +290,7 @@ type ComplexityRoot struct {
 		Cover               func(childComplexity int) int
 		CreatedAt           func(childComplexity int) int
 		Description         func(childComplexity int) int
+		Dob                 func(childComplexity int) int
 		Email               func(childComplexity int) int
 		ID                  func(childComplexity int) int
 		IsActive            func(childComplexity int) int
@@ -354,6 +356,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateLog(ctx context.Context, data string) (bool, error)
+	CreateUser(ctx context.Context, input *model.NewUser) (string, error)
 	UpdateUser(ctx context.Context, id string, input *model.UpdateUser) (bool, error)
 	UpdateUserPhoto(ctx context.Context, id string, photo string) (bool, error)
 	UpdateUserCoverPhoto(ctx context.Context, id string, photo string) (bool, error)
@@ -1122,6 +1125,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreatePayment(childComplexity, args["input"].(model.PaymentInput)), true
+
+	case "Mutation.createUser":
+		if e.complexity.Mutation.CreateUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(*model.NewUser)), true
 
 	case "Mutation.createVideo":
 		if e.complexity.Mutation.CreateVideo == nil {
@@ -2004,6 +2019,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Description(childComplexity), true
 
+	case "User.dob":
+		if e.complexity.User.Dob == nil {
+			break
+		}
+
+		return e.complexity.User.Dob(childComplexity), true
+
 	case "User.email":
 		if e.complexity.User.Email == nil {
 			break
@@ -2604,6 +2626,21 @@ func (ec *executionContext) field_Mutation_createPayment_args(ctx context.Contex
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNPaymentInput2githubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐPaymentInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.NewUser
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalONewUser2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐNewUser(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3929,6 +3966,8 @@ func (ec *executionContext) fieldContext_Activity_sender(ctx context.Context, fi
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -4051,6 +4090,8 @@ func (ec *executionContext) fieldContext_Activity_target(ctx context.Context, fi
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -4393,6 +4434,8 @@ func (ec *executionContext) fieldContext_Channel_broadcaster(ctx context.Context
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -5175,6 +5218,8 @@ func (ec *executionContext) fieldContext_ChannelFlakesLeaders_sender(ctx context
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -6045,6 +6090,8 @@ func (ec *executionContext) fieldContext_FollowersEdge_node(ctx context.Context,
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -7279,6 +7326,8 @@ func (ec *executionContext) fieldContext_Message_sender(ctx context.Context, fie
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -7749,6 +7798,61 @@ func (ec *executionContext) fieldContext_Mutation_createLog(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["input"].(*model.NewUser))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_updateUser(ctx, field)
 	if err != nil {
@@ -8108,6 +8212,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteUser(ctx context.Context
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -10626,6 +10732,8 @@ func (ec *executionContext) fieldContext_Query_getUserByUsername(ctx context.Con
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -10715,6 +10823,8 @@ func (ec *executionContext) fieldContext_Query_getUserByEmail(ctx context.Contex
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -10804,6 +10914,8 @@ func (ec *executionContext) fieldContext_Query_getUserById(ctx context.Context, 
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -10893,6 +11005,8 @@ func (ec *executionContext) fieldContext_Query_getRecommendedUsers(ctx context.C
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -10982,6 +11096,8 @@ func (ec *executionContext) fieldContext_Query_searchUsers(ctx context.Context, 
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -12039,6 +12155,8 @@ func (ec *executionContext) fieldContext_Query_getUsersInChat(ctx context.Contex
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -14014,6 +14132,50 @@ func (ec *executionContext) fieldContext_User_photo(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _User_dob(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_dob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Dob, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_dob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_cover(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_cover(ctx, field)
 	if err != nil {
@@ -14479,6 +14641,8 @@ func (ec *executionContext) fieldContext_UsersInChat_user(ctx context.Context, f
 				return ec.fieldContext_User_is_verified(ctx, field)
 			case "photo":
 				return ec.fieldContext_User_photo(ctx, field)
+			case "dob":
+				return ec.fieldContext_User_dob(ctx, field)
 			case "cover":
 				return ec.fieldContext_User_cover(ctx, field)
 			case "description":
@@ -17901,7 +18065,7 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email", "username"}
+	fieldsInOrder := [...]string{"name", "email", "username", "dob"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -17929,6 +18093,13 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 				return it, err
 			}
 			it.Username = data
+		case "dob":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dob"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Dob = data
 		}
 	}
 
@@ -19198,6 +19369,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createLog":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createLog(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createUser(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -20480,6 +20658,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "photo":
 			out.Values[i] = ec._User_photo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "dob":
+			out.Values[i] = ec._User_dob(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -22246,6 +22429,14 @@ func (ec *executionContext) unmarshalONewMessage2ᚖgithubᚗcomᚋglitchdᚋgli
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputNewMessage(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalONewUser2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐNewUser(ctx context.Context, v interface{}) (*model.NewUser, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNewUser(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

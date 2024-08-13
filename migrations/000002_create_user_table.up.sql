@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     stripe_connected_link BOOLEAN DEFAULT FALSE,
     photo TEXT,
     cover TEXT,
+    dob TEXT,
     description TEXT,
     links TEXT,
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,

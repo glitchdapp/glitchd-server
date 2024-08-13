@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -91,19 +92,56 @@ func (db *BUN) registerUser(email string) (*model.User, bool) {
 	return nil, false
 }
 
-func (db *BUN) CreateUsers(input *model.NewUser) (*model.User, error) {
+func (db *BUN) userWithEmailExists(email string) (int, error) {
+	var user model.User
+	count, err := db.client.NewSelect().Model(&user).Where("email = ?", email).ScanAndCount(context.Background())
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (db *BUN) CreateUser(input *model.NewUser) (string, error) {
 	var now = time.Now()
 
+	hasEmail, _ := db.userWithEmailExists(input.Email)
+
+	if hasEmail > 0 {
+		return "", errors.New("Email taken")
+	}
+
+	id := uuid.New().String()
+	_, err := db.GetChatIdentity(id)
+
+	if err != nil {
+		fmt.Println("Could not load chat identity something went wrong. ", err)
+		// update chat identity.
+		input := model.ChatIdentityInput{
+			Color: "#FF0000",
+			Badge: "",
+		}
+		db.UpdateChatIdentity(id, input)
+	}
+
 	data := model.User{
-		ID:        uuid.New().String(),
+		ID:        id,
+		Name:      input.Name,
 		Email:     input.Email,
+		Username:  input.Username,
+		Dob:       input.Dob,
 		CreatedAt: now,
 	}
 
-	res, err := db.client.NewInsert().Model(&data).Exec(context.Background())
+	res, err := db.client.NewRaw(
+		"INSERT INTO users (id, name, email, username, dob, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+		id, input.Name, input.Email, input.Username, input.Dob, now,
+	).Exec(context.Background())
 
 	if err != nil {
 		fmt.Println("Could not create user. Error: ", err)
+		return "", err
 	}
 
 	row, err := res.RowsAffected()
@@ -113,10 +151,20 @@ func (db *BUN) CreateUsers(input *model.NewUser) (*model.User, error) {
 	}
 
 	if row > 0 {
-		return &data, nil
+		// send email.
+		utils.SendMail(
+			input.Email,
+			"Welcome To Glitchd",
+			"<h1>Welcome to Glitchd, "+input.Name+"!</h1><h4>We are glad you could join us.</h4>",
+			"Welcome to Glitchd, "+input.Name+"!",
+		)
+
+		result, _ := db.createLoginToken(&data)
+
+		return result, nil
 	}
 
-	return &data, nil
+	return "", nil
 }
 
 func (db *BUN) UpdateUser(id string, input *model.UpdateUser) (bool, error) {
@@ -391,40 +439,11 @@ func (db *BUN) LoginAccount(email string) (string, error) {
 
 	err := db.client.NewRaw("SELECT * FROM ? WHERE email = ?", bun.Ident("users"), email).Scan(context.Background(), &user)
 
-	fmt.Println("Login possible error: ", err)
-
 	if err != nil {
-		fmt.Println("Login account error: ", err)
-		if err.Error() == "sql: no rows in result set" {
-			fmt.Println("No user present...", err)
-			fmt.Println("Inserting new user...")
-			user, isRegistered := db.registerUser(email)
-			if isRegistered {
-				fmt.Println("Registered user successfully...")
-			}
-
-			result, err := db.createLoginToken(user)
-
-			return result, err
-		}
 		return "", err
 	}
 
-	// chance of errors not going through.
-	if user.ID == "" {
-		fmt.Println("No user present...", err)
-		fmt.Println("Inserting new user...")
-		user, isRegistered := db.registerUser(email)
-		if isRegistered {
-			fmt.Println("Registered user successfully...")
-		}
-
-		result, err := db.createLoginToken(user)
-
-		return result, err
-	}
-
-	// login instead
+	// proceed with login
 	result, err := db.createLoginToken(&user)
 	return result, err
 }

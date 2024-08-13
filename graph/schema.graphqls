@@ -36,6 +36,7 @@ type User {
     is_active: Boolean!
     is_verified: Boolean!
     photo: String!
+    dob: String!
     cover: String!
     description: String!
     chat_identity: ChatIdentity!
@@ -48,6 +49,7 @@ input NewUser {
     name: String!
     email: String!
     username: String!
+    dob: String!
 }
 
 input UpdateUser {
@@ -406,6 +408,7 @@ type Mutation {
     createLog(data: String!): Boolean!
 
     # Manage users
+    createUser(input: NewUser): String!
     updateUser(id: String!, input: UpdateUser): Boolean! @auth
     updateUserPhoto(id: String!, photo: String!): Boolean! @auth
     updateUserCoverPhoto(id: String!, photo: String!): Boolean! @auth

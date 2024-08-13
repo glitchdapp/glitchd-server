@@ -18,6 +18,11 @@ func (r *mutationResolver) CreateLog(ctx context.Context, data string) (bool, er
 	return database.DB.CreateLog(data)
 }
 
+// CreateUser is the resolver for the createUser field.
+func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (string, error) {
+	return database.DB.CreateUser(input)
+}
+
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input *model.UpdateUser) (bool, error) {
 	return database.DB.UpdateUser(id, input)

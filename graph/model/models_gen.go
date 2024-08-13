@@ -195,6 +195,7 @@ type NewUser struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
+	Dob      string `json:"dob"`
 }
 
 type NewVideo struct {
@@ -279,6 +280,7 @@ type User struct {
 	IsActive            bool          `json:"is_active"`
 	IsVerified          bool          `json:"is_verified"`
 	Photo               string        `json:"photo"`
+	Dob                 string        `json:"dob"`
 	Cover               string        `json:"cover"`
 	Description         string        `json:"description"`
 	ChatIdentity        *ChatIdentity `json:"chat_identity"`
