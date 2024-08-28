@@ -13,6 +13,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"github.com/muxinc/mux-go/v5"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
 	"github.com/uptrace/bun"
@@ -21,6 +22,49 @@ import (
 type CustomClaim struct {
 	ID string
 	jwt.RegisteredClaims
+}
+
+func (db *BUN) initializeChannel(user_id string) (bool, error) {
+	id := uuid.New().String()
+	now := time.Now()
+
+	streamkey, playbackIds, err := db.createUserStreamInfo()
+
+	res, err := db.client.NewRaw(
+		"INSERT INTO channels (id, user_id, title, notification, category, streamkey, playback_id, tags, is_branded, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET title=EXCLUDED.title, notification=EXCLUDED.notification, tags=EXCLUDED.tags",
+		id, user_id, "", "", "", streamkey, playbackIds[0].Id, "", false, now,
+	).Exec(context.Background())
+
+	if err != nil {
+		return false, err
+	}
+	rows, err := res.RowsAffected()
+
+	if err != nil {
+		return false, err
+	}
+
+	if rows > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (db *BUN) createUserStreamInfo() (string, []muxgo.PlaybackId, error) {
+	client := muxgo.NewAPIClient(
+		muxgo.NewConfiguration(muxgo.WithBasicAuth(os.Getenv("MUX_ACCESS"), os.Getenv("MUX_SECRET"))))
+
+	// generate livestream.
+	car := muxgo.CreateAssetRequest{PlaybackPolicy: []muxgo.PlaybackPolicy{muxgo.PUBLIC}}
+	csr := muxgo.CreateLiveStreamRequest{NewAssetSettings: car, LowLatency: true, PlaybackPolicy: []muxgo.PlaybackPolicy{muxgo.PUBLIC}}
+	r, err := client.LiveStreamsApi.CreateLiveStream(csr)
+
+	if err != nil {
+		return "", nil, err
+	}
+
+	return r.Data.StreamKey, r.Data.PlaybackIds, nil
 }
 
 func (db *BUN) createStripeCustomer(user model.User) model.User {
@@ -151,17 +195,24 @@ func (db *BUN) CreateUser(input *model.NewUser) (string, error) {
 	}
 
 	if row > 0 {
-		// send email.
-		utils.SendMail(
-			input.Email,
-			"Welcome To Glitchd",
-			"<h1>Welcome to Glitchd, "+input.Name+"!</h1><h4>We are glad you could join us.</h4>",
-			"Welcome to Glitchd, "+input.Name+"!",
-		)
 
-		result, _ := db.createLoginToken(&data)
+		isMade, err := db.initializeChannel(id)
 
-		return result, nil
+		if isMade {
+			// send email.
+			utils.SendMail(
+				input.Email,
+				"Welcome To Glitchd",
+				"<h1>Welcome to Glitchd, "+input.Name+"!</h1><h4>We are glad you could join us.</h4>",
+				"Welcome to Glitchd, "+input.Name+"!",
+			)
+
+			result, _ := db.createLoginToken(&data)
+
+			return result, nil
+		}
+
+		return "", err
 	}
 
 	return "", nil
@@ -276,23 +327,27 @@ func (db *BUN) UpdateUserCoverPhoto(id string, photo string) (bool, error) {
 	return true, nil
 }
 
-func (db *BUN) DeleteUser(id string) (*model.User, error) {
+func (db *BUN) DeleteUser(id string) (bool, error) {
 	var user model.User
 
 	row, err := db.client.NewDelete().Model(&user).Where("id = ?", id).Returning("*").Exec(context.Background())
 
 	if err != nil {
 		fmt.Println("Error deleting user: ", err)
-		return nil, err
+		return false, err
 	}
 
 	rows, err := row.RowsAffected()
 
-	if rows > 0 {
-		return &user, nil
+	if err != nil {
+		return false, err
 	}
 
-	return &model.User{}, nil
+	if rows > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (db *BUN) GetAccounts(limit int) ([]*model.User, error) {

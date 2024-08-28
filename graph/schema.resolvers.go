@@ -44,7 +44,7 @@ func (r *mutationResolver) UpdateUserStripe(ctx context.Context, id string, inpu
 }
 
 // DeleteUser is the resolver for the deleteUser field.
-func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.User, error) {
+func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (bool, error) {
 	return database.DB.DeleteUser(id)
 }
 
@@ -317,6 +317,11 @@ func (r *mutationResolver) AddFlakes(ctx context.Context, userID string, amount 
 	return database.DB.AddFlakes(userID, amount)
 }
 
+// CreatePost is the resolver for the createPost field.
+func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPostInput) (bool, error) {
+	return database.DB.CreatePost(input)
+}
+
 // GetUserByUsername is the resolver for the getUserByUsername field.
 func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
 	return database.DB.GetUserByUsername(username)
@@ -477,6 +482,21 @@ func (r *queryResolver) GetChannelFlakesLeaders(ctx context.Context, channelID s
 	return database.DB.GetChannelFlakesLeaders(channelID)
 }
 
+// GetUserPosts is the resolver for the getUserPosts field.
+func (r *queryResolver) GetUserPosts(ctx context.Context, channelID string, first int, after string) (*model.PostsResult, error) {
+	return database.DB.GetUserPosts(channelID, first, after)
+}
+
+// GetAllPosts is the resolver for the getAllPosts field.
+func (r *queryResolver) GetAllPosts(ctx context.Context, first int, after string) (*model.PostsResult, error) {
+	return database.DB.GetPosts(first, after)
+}
+
+// GetFollowingPosts is the resolver for the getFollowingPosts field.
+func (r *queryResolver) GetFollowingPosts(ctx context.Context, channelID string, first int, after string) (*model.PostsResult, error) {
+	panic(fmt.Errorf("not implemented: GetFollowingPosts - getFollowingPosts"))
+}
+
 // GetMessages is the resolver for the getMessages field.
 func (r *subscriptionResolver) GetMessages(ctx context.Context, channelID string, userID string) (<-chan *model.Message, error) {
 	room := r.getRoom(channelID)
@@ -485,6 +505,8 @@ func (r *subscriptionResolver) GetMessages(ctx context.Context, channelID string
 	events := make(chan *model.Message, 1)
 
 	database.DB.AddUserInChat(channelID, userID)
+
+	fmt.Println("getting messages: ", channelID, userID)
 
 	go func() {
 		<-ctx.Done()

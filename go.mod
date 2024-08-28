@@ -10,6 +10,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
+	github.com/muxinc/mux-go/v5 v5.6.0
 	github.com/resend/resend-go/v2 v2.6.0
 	github.com/stripe/stripe-go v70.15.0+incompatible
 	github.com/uptrace/bun v1.1.16

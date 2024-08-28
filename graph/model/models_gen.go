@@ -191,6 +191,13 @@ type NewMessage struct {
 	ReplyParentMessageID string `json:"reply_parent_message_id"`
 }
 
+type NewPostInput struct {
+	Author  string `json:"author"`
+	Message string `json:"message"`
+	Media   string `json:"media"`
+	ReplyTo string `json:"reply_to"`
+}
+
 type NewUser struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
@@ -237,6 +244,25 @@ type PaymentInput struct {
 	UserID  string `json:"user_id"`
 	OrderID string `json:"order_id"`
 	Status  string `json:"status"`
+}
+
+type Post struct {
+	ID        string    `json:"id"`
+	Author    string    `json:"author"`
+	Message   string    `json:"message"`
+	Media     string    `json:"media"`
+	ReplyTo   string    `json:"reply_to"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type PostsEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Post  `json:"node"`
+}
+
+type PostsResult struct {
+	Edges    []*PostsEdge `json:"edges"`
+	PageInfo *PageInfo    `json:"pageInfo"`
 }
 
 type Query struct {

@@ -348,6 +348,31 @@ type ChannelFlakesLeaders {
     amount: Int!
 }
 
+type Post {
+    id: UUID!
+    author: String!
+    message: String!
+    media: String!
+    reply_to: String!
+    created_at: Time!
+}
+type PostsResult {
+    edges: [PostsEdge!]!
+    pageInfo: PageInfo!
+}
+
+type PostsEdge {
+    cursor: String!
+    node: Post!
+}
+
+input NewPostInput {
+    author: String!
+    message: String!
+    media: String!
+    reply_to: String!
+}
+
 type Subscription {
     getMessages(channel_id: String!, user_id: String!): Message!
     getVideoViewers(video_id: String!): Int!
@@ -400,6 +425,10 @@ type Query {
     getFlakes(user_id: String!): Int!
     getChannelFlakes(channel_id: String!): [ChannelFlakes!]!
     getChannelFlakesLeaders(channel_id: String!): [ChannelFlakesLeaders!]!
+
+    getUserPosts(channel_id: String!,first: Int!, after: String!): PostsResult
+    getAllPosts(first: Int!, after: String!): PostsResult
+    getFollowingPosts(channel_id: String!,first: Int!, after: String!): PostsResult
 }
 
 type Mutation {
@@ -413,7 +442,7 @@ type Mutation {
     updateUserPhoto(id: String!, photo: String!): Boolean! @auth
     updateUserCoverPhoto(id: String!, photo: String!): Boolean! @auth
     updateUserStripe(id: String!, input: UserStripeInput): Boolean!
-    deleteUser(id: String!): User! @auth
+    deleteUser(id: String!): Boolean! @auth
 
     # Authentication
     login(email: String!): String!
@@ -456,4 +485,6 @@ type Mutation {
     deleteMembership(id: String!): Boolean! @auth
 
     addFlakes(user_id: String!, amount: Int!): Boolean! @auth
+
+    createPost(input: NewPostInput!): Boolean! @auth
 }

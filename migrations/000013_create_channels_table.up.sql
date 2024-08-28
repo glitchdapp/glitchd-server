@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS channels (
     title TEXT,
     notification TEXT,
     category TEXT,
+    livestream_id TEXT,
     streamkey TEXT,
     playback_id TEXT,
     tags TEXT,
