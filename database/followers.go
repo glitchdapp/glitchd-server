@@ -226,10 +226,10 @@ func (db *BUN) CountFollowing(follower_id string) (int, error) {
 	return count, nil
 }
 
-func (db *BUN) IsFollowing(user_id string) (bool, error) {
+func (db *BUN) IsFollowing(user_id string, follower_id string) (bool, error) {
 	var follower model.Follower
 
-	count, err := db.client.NewSelect().Model(&follower).Where("user_id = ?", user_id).ScanAndCount(context.Background())
+	count, err := db.client.NewSelect().Model(&follower).Where("user_id = ? AND follower_id = ?", user_id, follower_id).ScanAndCount(context.Background())
 
 	if err != nil {
 		return false, nil

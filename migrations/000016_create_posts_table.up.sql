@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS posts (
     author TEXT NOT NULL,
     message TEXT NOT NULL,
     media TEXT,
+    media_type TEXT,
     reply_to TEXT,
     created_at timestamp NOT NULL DEFAULT NOW()
 );

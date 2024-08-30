@@ -322,6 +322,26 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPostIn
 	return database.DB.CreatePost(input)
 }
 
+// DeletePost is the resolver for the deletePost field.
+func (r *mutationResolver) DeletePost(ctx context.Context, postID string) (bool, error) {
+	return database.DB.DeletePost(postID)
+}
+
+// LikePost is the resolver for the likePost field.
+func (r *mutationResolver) LikePost(ctx context.Context, postID string, userID string) (bool, error) {
+	return database.DB.LikePost(postID, userID)
+}
+
+// UnlikePost is the resolver for the unlikePost field.
+func (r *mutationResolver) UnlikePost(ctx context.Context, postID string, userID string) (bool, error) {
+	return database.DB.UnlikePost(postID, userID)
+}
+
+// GetAllUsers is the resolver for the getAllUsers field.
+func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) {
+	return database.DB.GetUsers()
+}
+
 // GetUserByUsername is the resolver for the getUserByUsername field.
 func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
 	return database.DB.GetUserByUsername(username)
@@ -408,8 +428,8 @@ func (r *queryResolver) CountFollowers(ctx context.Context, userID string) (int,
 }
 
 // IsFollowing is the resolver for the isFollowing field.
-func (r *queryResolver) IsFollowing(ctx context.Context, userID string) (bool, error) {
-	return database.DB.IsFollowing(userID)
+func (r *queryResolver) IsFollowing(ctx context.Context, userID string, followerID string) (bool, error) {
+	return database.DB.IsFollowing(userID, followerID)
 }
 
 // CountFollowing is the resolver for the countFollowing field.
@@ -487,14 +507,44 @@ func (r *queryResolver) GetUserPosts(ctx context.Context, channelID string, firs
 	return database.DB.GetUserPosts(channelID, first, after)
 }
 
+// GetPostReplies is the resolver for the getPostReplies field.
+func (r *queryResolver) GetPostReplies(ctx context.Context, postID string, first int, after string) (*model.PostsResult, error) {
+	return database.DB.GetPostReplies(postID, first, after)
+}
+
+// CountPostReplies is the resolver for the countPostReplies field.
+func (r *queryResolver) CountPostReplies(ctx context.Context, postID string) (int, error) {
+	return database.DB.CountPostReplies(postID)
+}
+
 // GetAllPosts is the resolver for the getAllPosts field.
 func (r *queryResolver) GetAllPosts(ctx context.Context, first int, after string) (*model.PostsResult, error) {
 	return database.DB.GetPosts(first, after)
 }
 
+// GetPostByID is the resolver for the getPostById field.
+func (r *queryResolver) GetPostByID(ctx context.Context, postID string) (*model.Post, error) {
+	return database.DB.GetPostByID(postID)
+}
+
+// GetPostsByQuery is the resolver for the getPostsByQuery field.
+func (r *queryResolver) GetPostsByQuery(ctx context.Context, query string, first int, after string) (*model.PostsResult, error) {
+	return database.DB.GetPostsByQuery(query, first, after)
+}
+
 // GetFollowingPosts is the resolver for the getFollowingPosts field.
 func (r *queryResolver) GetFollowingPosts(ctx context.Context, channelID string, first int, after string) (*model.PostsResult, error) {
 	panic(fmt.Errorf("not implemented: GetFollowingPosts - getFollowingPosts"))
+}
+
+// GetLikes is the resolver for the getLikes field.
+func (r *queryResolver) GetLikes(ctx context.Context, postID string) (int, error) {
+	return database.DB.GetLikes(postID)
+}
+
+// GetLikedByUser is the resolver for the getLikedByUser field.
+func (r *queryResolver) GetLikedByUser(ctx context.Context, postID string, userID string) (bool, error) {
+	return database.DB.GetLikedByUser(postID, userID)
 }
 
 // GetMessages is the resolver for the getMessages field.

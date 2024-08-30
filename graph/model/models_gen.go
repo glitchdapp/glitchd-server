@@ -24,6 +24,7 @@ type Channel struct {
 	UserID       string    `json:"user_id"`
 	Title        string    `json:"title"`
 	Notification string    `json:"notification"`
+	LivestreamID string    `json:"livestream_id"`
 	Category     string    `json:"category"`
 	Streamkey    string    `json:"streamkey"`
 	PlaybackID   string    `json:"playback_id"`
@@ -111,6 +112,13 @@ type FollowersResult struct {
 	PageInfo *PageInfo        `json:"pageInfo"`
 }
 
+type Like struct {
+	ID        string    `json:"id"`
+	PostID    string    `json:"post_id"`
+	UserID    string    `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type LogInput struct {
 	Data string `json:"data"`
 }
@@ -192,10 +200,11 @@ type NewMessage struct {
 }
 
 type NewPostInput struct {
-	Author  string `json:"author"`
-	Message string `json:"message"`
-	Media   string `json:"media"`
-	ReplyTo string `json:"reply_to"`
+	Author    string `json:"author"`
+	Message   string `json:"message"`
+	Media     string `json:"media"`
+	MediaType string `json:"media_type"`
+	ReplyTo   string `json:"reply_to"`
 }
 
 type NewUser struct {
@@ -249,8 +258,10 @@ type PaymentInput struct {
 type Post struct {
 	ID        string    `json:"id"`
 	Author    string    `json:"author"`
+	User      *User     `json:"user"`
 	Message   string    `json:"message"`
 	Media     string    `json:"media"`
+	MediaType string    `json:"media_type"`
 	ReplyTo   string    `json:"reply_to"`
 	CreatedAt time.Time `json:"created_at"`
 }

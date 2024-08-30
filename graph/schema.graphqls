@@ -1,6 +1,6 @@
 directive @goField(
-    forceResolver: Boolean
-    name: String
+  forceResolver: Boolean
+  name: String
 ) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 directive @auth on FIELD_DEFINITION
@@ -11,480 +11,519 @@ scalar JSON
 scalar Any
 
 type PageInfo {
-    endCursor: String!
-    hasNextPage: Boolean!
+  endCursor: String!
+  hasNextPage: Boolean!
 }
 
 type Logs {
-    id: UUID!
-    data: String!
-    created_at: Time!
+  id: UUID!
+  data: String!
+  created_at: Time!
 }
 
 input LogInput {
-    data: String!
+  data: String!
 }
 
 type User {
-    id: UUID!
-    email: String!
-    username: String!
-    name: String!
-    biography: String!
-    stripe_customer_id: String!
-    stripe_connected_link: Boolean!
-    is_active: Boolean!
-    is_verified: Boolean!
-    photo: String!
-    dob: String!
-    cover: String!
-    description: String!
-    chat_identity: ChatIdentity!
-    links: [String!]!
-    created_at: Time!
-    updated_at: Time!
+  id: UUID!
+  email: String!
+  username: String!
+  name: String!
+  biography: String!
+  stripe_customer_id: String!
+  stripe_connected_link: Boolean!
+  is_active: Boolean!
+  is_verified: Boolean!
+  photo: String!
+  dob: String!
+  cover: String!
+  description: String!
+  chat_identity: ChatIdentity!
+  links: [String!]!
+  created_at: Time!
+  updated_at: Time!
 }
 
 input NewUser {
-    name: String!
-    email: String!
-    username: String!
-    dob: String!
+  name: String!
+  email: String!
+  username: String!
+  dob: String!
 }
 
 input UpdateUser {
-    username: String!
-    name: String!
-    biography: String!
+  username: String!
+  name: String!
+  biography: String!
 }
 
 input UserStripeInput {
-    stripe_customer_id: String!
-    stripe_connected_link: Boolean!
+  stripe_customer_id: String!
+  stripe_connected_link: Boolean!
 }
 
 type Token {
-    id: UUID!
-    user_id: String!
-    token: String!
-    created_at: Time
+  id: UUID!
+  user_id: String!
+  token: String!
+  created_at: Time
 }
 
 type Channel {
-    id: UUID!
-    broadcaster: User!
-    user_id: String!
-    title: String!
-    notification: String!
-    category: String!
-    streamkey: String!
-    playback_id: String!
-    tags: String!
-    is_branded: Boolean!
-    created_at: Time!
-    updated_at: Time!
+  id: UUID!
+  broadcaster: User!
+  user_id: String!
+  title: String!
+  notification: String!
+  livestream_id: String!
+  category: String!
+  streamkey: String!
+  playback_id: String!
+  tags: String!
+  is_branded: Boolean!
+  created_at: Time!
+  updated_at: Time!
 }
 
 input ChannelInput {
-    broadcaster_id: String!
-    title: String!
-    notification: String!
-    category: String!
-    streamkey: String!
-    playback_id: String!
-    tags: String!
-    is_branded: Boolean!
+  broadcaster_id: String!
+  title: String!
+  notification: String!
+  category: String!
+  streamkey: String!
+  playback_id: String!
+  tags: String!
+  is_branded: Boolean!
 }
 
 type Video {
-    id: UUID!
-    channel_id: String!
-    title: String!
-    caption: String!
-    category: String!
-    poster: String!
-    thumbnail: String!
-    media: String!
-    job_id: String!
-    tier: Int!
-    views: Int!
-    isPremium: Boolean!
-    isVisible: Boolean!
-    created_at: Time!
-    updated_at: Time!
+  id: UUID!
+  channel_id: String!
+  title: String!
+  caption: String!
+  category: String!
+  poster: String!
+  thumbnail: String!
+  media: String!
+  job_id: String!
+  tier: Int!
+  views: Int!
+  isPremium: Boolean!
+  isVisible: Boolean!
+  created_at: Time!
+  updated_at: Time!
 }
 
 type VideoJob {
-    id: UUID!
-    job_id: String!
-    status: String!
-    updated_at: Time!
+  id: UUID!
+  job_id: String!
+  status: String!
+  updated_at: Time!
 }
 
 input VideoJobInput {
-    job_id: String!
-    status: String!
+  job_id: String!
+  status: String!
 }
 
 type VideosResult {
-    edges: [VideosEdge!]!
-    pageInfo: PageInfo!
+  edges: [VideosEdge!]!
+  pageInfo: PageInfo!
 }
 
 type VideosEdge {
-    cursor: String!
-    node: Video!
+  cursor: String!
+  node: Video!
 }
 
 type VideoView {
-    id: UUID!
-    video_id: String!
-    user_id: String!
-    created_at: Time!
+  id: UUID!
+  video_id: String!
+  user_id: String!
+  created_at: Time!
 }
 
 input NewVideo {
-    channel_id: String!
-    title: String!
-    job_id: String!
+  channel_id: String!
+  title: String!
+  job_id: String!
 }
 
 input NewVideoView {
-    channel_id: String!
-    user_id: String!
-    video_id: String!
+  channel_id: String!
+  user_id: String!
+  video_id: String!
 }
 
 input UpdateVideo {
-    title: String!
-    caption: String!
-    category: String!
-    poster: String!
-    thumbnail: String!
-    media: String!
-    tier: Int!
-    isVisible: Boolean!
+  title: String!
+  caption: String!
+  category: String!
+  poster: String!
+  thumbnail: String!
+  media: String!
+  tier: Int!
+  isVisible: Boolean!
 }
 
 type ChannelViewer {
-    id: UUID!
-    channel_id: String!
-    user_id: String!
-    created_at: Time!
+  id: UUID!
+  channel_id: String!
+  user_id: String!
+  created_at: Time!
 }
 
 input ChannelViewerInput {
-    channel_id: String!
-    user_id: String!
+  channel_id: String!
+  user_id: String!
 }
 
 type Message {
-    id: UUID!
-    channel_id: String!
-    sender_id: String!
-    sender: User!
-    is_sent: Boolean!
-    message: String!
-    message_type: String!
-    amount: Int!
-    drop_code: String!
-    drop_message: String!
-    reply_parent_message_id: String!
-    created_at: Time!
-    updated_at: Time!
+  id: UUID!
+  channel_id: String!
+  sender_id: String!
+  sender: User!
+  is_sent: Boolean!
+  message: String!
+  message_type: String!
+  amount: Int!
+  drop_code: String!
+  drop_message: String!
+  reply_parent_message_id: String!
+  created_at: Time!
+  updated_at: Time!
 }
 
 input NewMessage {
-    channel_id: String!
-    sender_id: String!
-    message: String!
-    message_type: String!
-    amount: Int!
-    is_sent: Boolean!
-    reply_parent_message_id: String!
+  channel_id: String!
+  sender_id: String!
+  message: String!
+  message_type: String!
+  amount: Int!
+  is_sent: Boolean!
+  reply_parent_message_id: String!
 }
 
 type ChatIdentity {
-    id: UUID!
-    user_id: String!
-    color: String!
-    badge: String!
+  id: UUID!
+  user_id: String!
+  color: String!
+  badge: String!
 }
 
 input ChatIdentityInput {
-    color: String!
-    badge: String!
+  color: String!
+  badge: String!
 }
 
 type UsersInChat {
-    id: UUID!
-    channel_id: String!
-    user_id: String!
-    user: User!
+  id: UUID!
+  channel_id: String!
+  user_id: String!
+  user: User!
 }
 
 input UsersInChatInput {
-    channel_id: String!
-    user_id: String!
+  channel_id: String!
+  user_id: String!
 }
 
 type Activity {
-    id: UUID!
-    sender: User!
-    sender_id: String!
-    target: User!
-    target_id: String!
-    type: String!
-    message: String!
-    created_at: Time!
-    updated_at: Time!
+  id: UUID!
+  sender: User!
+  sender_id: String!
+  target: User!
+  target_id: String!
+  type: String!
+  message: String!
+  created_at: Time!
+  updated_at: Time!
 }
 
 type Notification {
-    id: UUID!
-    owner: UUID!
-    entity: String!
-    message: String!
-    seen_by: [String!]!
-    created_at: String!
+  id: UUID!
+  owner: UUID!
+  entity: String!
+  message: String!
+  seen_by: [String!]!
+  created_at: String!
 }
 
 type Membership {
-    id: UUID!
-    channel_id: String!
-    user_id: String!
-    gifter: String!
-    is_gift: Boolean!
-    tier: String!
-    is_active: Boolean!
-    created_at: Time!
-    updated_at: Time!
+  id: UUID!
+  channel_id: String!
+  user_id: String!
+  gifter: String!
+  is_gift: Boolean!
+  tier: String!
+  is_active: Boolean!
+  created_at: Time!
+  updated_at: Time!
 }
 
 input NewMembership {
-    channel_id: String!
-    user_id: String!
-    gifter_id: String!
-    is_gift: Boolean!
-    is_active: Boolean!
-    tier: String!
+  channel_id: String!
+  user_id: String!
+  gifter_id: String!
+  is_gift: Boolean!
+  is_active: Boolean!
+  tier: String!
 }
 
 type MembershipDetails {
-    id: UUID!
-    channel_id: String!
-    tier: Int!
-    name: String!
-    description: String!
-    badges: [String!]!
-    cost: String!
-    created_at: Time!
-    updated_at: Time!
+  id: UUID!
+  channel_id: String!
+  tier: Int!
+  name: String!
+  description: String!
+  badges: [String!]!
+  cost: String!
+  created_at: Time!
+  updated_at: Time!
 }
 
 input MembershipDetailsInput {
-    channel_id: String!
-    tier: Int!
-    name: String!
-    description: String!
-    cost: String!
+  channel_id: String!
+  tier: Int!
+  name: String!
+  description: String!
+  cost: String!
 }
 
 type Follower {
-    id: UUID!
-    user_id: String!
-    follower_id: String!
-    created_at: Time!
+  id: UUID!
+  user_id: String!
+  follower_id: String!
+  created_at: Time!
 }
 
 type FollowersResult {
-    edges: [FollowersEdge!]!
-    pageInfo: PageInfo!
+  edges: [FollowersEdge!]!
+  pageInfo: PageInfo!
 }
 
 type FollowersEdge {
-    cursor: String!
-    node: User!
+  cursor: String!
+  node: User!
 }
 
 input FollowInput {
-    user_id: String!
-    follower_id: String!
+  user_id: String!
+  follower_id: String!
 }
 
 type Payment {
-    id: UUID!
-    user_id: String!
-    order_id: String!
-    status: String!
-    created_at: Time!
-    updated_at: Time!
+  id: UUID!
+  user_id: String!
+  order_id: String!
+  status: String!
+  created_at: Time!
+  updated_at: Time!
 }
 
 input PaymentInput {
-    user_id: String!
-    order_id: String!
-    status: String!
+  user_id: String!
+  order_id: String!
+  status: String!
 }
 
 type Flakes {
-    id: UUID!
-    user_id: String!
-    amount: Int!
-    created_at: Time!
+  id: UUID!
+  user_id: String!
+  amount: Int!
+  created_at: Time!
 }
 
 type ChannelFlakes {
-    id: UUID!
-    channel_id: String!
-    sender_id: String!
-    amount: Int!
-    created_at: Time!
+  id: UUID!
+  channel_id: String!
+  sender_id: String!
+  amount: Int!
+  created_at: Time!
 }
 
 type ChannelFlakesLeaders {
-    sender_id: String!
-    sender: User!
-    amount: Int!
+  sender_id: String!
+  sender: User!
+  amount: Int!
 }
 
 type Post {
-    id: UUID!
-    author: String!
-    message: String!
-    media: String!
-    reply_to: String!
-    created_at: Time!
+  id: UUID!
+  author: String!
+  user: User!
+  message: String!
+  media: String!
+  media_type: String!
+  reply_to: String!
+  created_at: Time!
 }
 type PostsResult {
-    edges: [PostsEdge!]!
-    pageInfo: PageInfo!
+  edges: [PostsEdge!]!
+  pageInfo: PageInfo!
 }
 
 type PostsEdge {
-    cursor: String!
-    node: Post!
+  cursor: String!
+  node: Post!
 }
 
 input NewPostInput {
-    author: String!
-    message: String!
-    media: String!
-    reply_to: String!
+  author: String!
+  message: String!
+  media: String!
+  media_type: String!
+  reply_to: String!
+}
+
+type Like {
+  id: UUID!
+  post_id: String!
+  user_id: String!
+  created_at: Time!
 }
 
 type Subscription {
-    getMessages(channel_id: String!, user_id: String!): Message!
-    getVideoViewers(video_id: String!): Int!
-    getChannelViewers(channel_id: String!, user_id: String!): Int!
-    getActivity(channel_id: String!): Activity!
-    getVideoJob(job_id: String!): String!
+  getMessages(channel_id: String!, user_id: String!): Message!
+  getVideoViewers(video_id: String!): Int!
+  getChannelViewers(channel_id: String!, user_id: String!): Int!
+  getActivity(channel_id: String!): Activity!
+  getVideoJob(job_id: String!): String!
 }
 
 type Query {
-    # Get Users
-    getUserByUsername(username: String!): User!
-    getUserByEmail(email: String!): User!
-    getUserById(id: String!): User!
-    getRecommendedUsers(limit: Int!): [User!]!
-    searchUsers(query: String!): [User!]!
+  # Get Users
+  getAllUsers: [User!]!
+  getUserByUsername(username: String!): User!
+  getUserByEmail(email: String!): User!
+  getUserById(id: String!): User!
+  getRecommendedUsers(limit: Int!): [User!]!
+  searchUsers(query: String!): [User!]!
 
-    # Get Videos
-    getVideos(channel_id: String!, first: Int!, after: String!): VideosResult
-    getAllVideos(first: Int!, after: String!): VideosResult
-    getVideosByCategory(category: String!, first: Int!, after: String!): VideosResult
-    getVideoById(id: String!): Video!
-    getVideoViews(video_id: String!): Int!
-    getChannelViews(channel_id: String!): Int!
-    countChannelVideos(channel_id: String!): Int!
-    getVideoJob(job_id: String!): String!
-    searchVideos(query: String!, first: Int!, after: String!): VideosResult
+  # Get Videos
+  getVideos(channel_id: String!, first: Int!, after: String!): VideosResult
+  getAllVideos(first: Int!, after: String!): VideosResult
+  getVideosByCategory(
+    category: String!
+    first: Int!
+    after: String!
+  ): VideosResult
+  getVideoById(id: String!): Video!
+  getVideoViews(video_id: String!): Int!
+  getChannelViews(channel_id: String!): Int!
+  countChannelVideos(channel_id: String!): Int!
+  getVideoJob(job_id: String!): String!
+  searchVideos(query: String!, first: Int!, after: String!): VideosResult
 
-    # Handle Connections
-    getFollowers(user_id: String!, first: Int!, after: String!): FollowersResult
-    getFollowing(follower_id: String!, first: Int!, after: String!): FollowersResult
-    countFollowers(user_id: String!): Int!
-    isFollowing(user_id: String!): Boolean!
-    countFollowing(follower_id: String!): Int!
+  # Handle Connections
+  getFollowers(user_id: String!, first: Int!, after: String!): FollowersResult
+  getFollowing(
+    follower_id: String!
+    first: Int!
+    after: String!
+  ): FollowersResult
+  countFollowers(user_id: String!): Int!
+  isFollowing(user_id: String!, follower_id: String!): Boolean!
+  countFollowing(follower_id: String!): Int!
 
-    # Get Channel Info
-    getRecentMessages(channel_id: String!): [Message!]!
-    getChatIdentity(user_id: String!): ChatIdentity!
-    getUsersInChat(channel_id: String!): [User!]!
-    getRecentActivity(channel_id: String!): [Activity!]!
+  # Get Channel Info
+  getRecentMessages(channel_id: String!): [Message!]!
+  getChatIdentity(user_id: String!): ChatIdentity!
+  getUsersInChat(channel_id: String!): [User!]!
+  getRecentActivity(channel_id: String!): [Activity!]!
 
-    getPaymentBySession(session_id: String!): Payment!
+  getPaymentBySession(session_id: String!): Payment!
 
-    getUserMembership(user_id: String!, channel_id: String!): [Membership!]! @auth
-    getChannelMembershipDetails(channel_id: String!): [MembershipDetails!]! @auth
-    getMembershipById(id: String!): Membership! @auth
-    getChannelMemberships(channel_id: String!): [Membership!]! @auth
+  getUserMembership(user_id: String!, channel_id: String!): [Membership!]! @auth
+  getChannelMembershipDetails(channel_id: String!): [MembershipDetails!]! @auth
+  getMembershipById(id: String!): Membership! @auth
+  getChannelMemberships(channel_id: String!): [Membership!]! @auth
 
-    getChannelInfo(user_id: String!): Channel! @auth
+  getChannelInfo(user_id: String!): Channel! @auth
 
-    getFlakes(user_id: String!): Int!
-    getChannelFlakes(channel_id: String!): [ChannelFlakes!]!
-    getChannelFlakesLeaders(channel_id: String!): [ChannelFlakesLeaders!]!
+  getFlakes(user_id: String!): Int!
+  getChannelFlakes(channel_id: String!): [ChannelFlakes!]!
+  getChannelFlakesLeaders(channel_id: String!): [ChannelFlakesLeaders!]!
 
-    getUserPosts(channel_id: String!,first: Int!, after: String!): PostsResult
-    getAllPosts(first: Int!, after: String!): PostsResult
-    getFollowingPosts(channel_id: String!,first: Int!, after: String!): PostsResult
+  getUserPosts(channel_id: String!, first: Int!, after: String!): PostsResult
+  getPostReplies(post_id: String!, first: Int!, after: String!): PostsResult
+  countPostReplies(post_id: String!): Int!
+  getAllPosts(first: Int!, after: String!): PostsResult
+  getPostById(post_id: String!): Post!
+  getPostsByQuery(query: String!, first: Int!, after: String!): PostsResult
+  getFollowingPosts(
+    channel_id: String!
+    first: Int!
+    after: String!
+  ): PostsResult
+
+  getLikes(post_id: String!): Int!
+  getLikedByUser(post_id: String!, user_id: String!): Boolean!
 }
 
 type Mutation {
+  # Glitchd Logs cause all else sucks! Anyone can send a request to it who cares.
+  createLog(data: String!): Boolean!
 
-    # Glitchd Logs cause all else sucks! Anyone can send a request to it who cares.
-    createLog(data: String!): Boolean!
+  # Manage users
+  createUser(input: NewUser): String!
+  updateUser(id: String!, input: UpdateUser): Boolean! @auth
+  updateUserPhoto(id: String!, photo: String!): Boolean! @auth
+  updateUserCoverPhoto(id: String!, photo: String!): Boolean! @auth
+  updateUserStripe(id: String!, input: UserStripeInput): Boolean!
+  deleteUser(id: String!): Boolean! @auth
 
-    # Manage users
-    createUser(input: NewUser): String!
-    updateUser(id: String!, input: UpdateUser): Boolean! @auth
-    updateUserPhoto(id: String!, photo: String!): Boolean! @auth
-    updateUserCoverPhoto(id: String!, photo: String!): Boolean! @auth
-    updateUserStripe(id: String!, input: UserStripeInput): Boolean!
-    deleteUser(id: String!): Boolean! @auth
+  # Authentication
+  login(email: String!): String!
+  verifyToken(id: String!, token: String!): String!
+  verifyEmail(id: String!, email: String!): Boolean!
 
-    # Authentication
-    login(email: String!): String!
-    verifyToken(id: String!, token: String!): String!
-    verifyEmail(id: String!, email: String!): Boolean!
+  # Manage Stream
+  createChannel(user_id: String!, input: ChannelInput!): Boolean! @auth
+  createChannelViewer(channel_id: String!, user_id: String!): Int!
+  updateStreamKey(
+    user_id: String!
+    streamkey: String!
+    playback_id: String!
+  ): Boolean! @auth
 
-    # Manage Stream
-    createChannel(user_id: String!, input: ChannelInput!): Boolean! @auth
-    createChannelViewer(channel_id: String!, user_id: String!): Int!
-    updateStreamKey(user_id: String!, streamkey: String!, playback_id: String!): Boolean! @auth
+  # Send Chat Messages
+  postMessage(input: NewMessage): Message! @auth
 
-    # Send Chat Messages
-    postMessage(input: NewMessage): Message! @auth
+  # Handle Videos
+  createVideo(input: NewVideo!): String! @auth
+  createVideoView(input: NewVideoView!): Int! @auth
+  updateVideo(id: String!, input: UpdateVideo!): Boolean! @auth
+  deleteVideo(id: String!): Boolean! @auth
+  updateVideoJob(job_id: String!, status: String!): String!
 
-    # Handle Videos
-    createVideo(input: NewVideo!): String! @auth
-    createVideoView(input: NewVideoView!): Int! @auth
-    updateVideo(id: String!, input: UpdateVideo!): Boolean! @auth
-    deleteVideo(id: String!): Boolean! @auth
-    updateVideoJob(job_id: String!, status: String!): String!
+  # Handle Followers
+  followUser(input: FollowInput!): Follower! @auth
+  removeFollower(user_id: String!, follower_id: String!): Boolean! @auth
 
-    # Handle Followers
-    followUser(input: FollowInput!): Follower! @auth
-    removeFollower(user_id: String!, follower_id: String!): Boolean! @auth
+  # Manage Chat identity
+  updateChatIdentity(user_id: String!, input: ChatIdentityInput!): Boolean!
+    @auth
+  addUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
+  removeUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
 
-    # Manage Chat identity
-    updateChatIdentity(user_id: String!, input: ChatIdentityInput!): Boolean! @auth
-    addUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
-    removeUserInChat(channel_id: String!, user_id: String!): Boolean! @auth
+  # Track Payments
+  createPayment(input: PaymentInput!): Boolean! @auth
+  updatePayment(input: PaymentInput!): Boolean! @auth
 
-    # Track Payments
-    createPayment(input: PaymentInput!): Boolean! @auth
-    updatePayment(input: PaymentInput!): Boolean! @auth
+  # Handle Memberships
+  createMembershipDetails(input: MembershipDetailsInput!): Boolean! @auth
+  createMembership(input: NewMembership!): Membership! @auth
+  updateMembership(id: String!, input: NewMembership!): Boolean! @auth
+  updateMembershipStatus(id: String!, is_active: Boolean!): Boolean!
+  deleteMembership(id: String!): Boolean! @auth
 
-    # Handle Memberships
-    createMembershipDetails(input: MembershipDetailsInput!): Boolean! @auth
-    createMembership(input: NewMembership!): Membership! @auth
-    updateMembership(id: String!, input: NewMembership!): Boolean! @auth
-    updateMembershipStatus(id: String!, is_active: Boolean!): Boolean!
-    deleteMembership(id: String!): Boolean! @auth
+  addFlakes(user_id: String!, amount: Int!): Boolean! @auth
 
-    addFlakes(user_id: String!, amount: Int!): Boolean! @auth
+  createPost(input: NewPostInput!): Boolean! @auth
+  deletePost(post_id: String!): Boolean! @auth
 
-    createPost(input: NewPostInput!): Boolean! @auth
+  likePost(post_id: String!, user_id: String!): Boolean! @auth
+  unlikePost(post_id: String!, user_id: String!): Boolean! @auth
 }

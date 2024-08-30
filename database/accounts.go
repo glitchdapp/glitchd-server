@@ -28,11 +28,11 @@ func (db *BUN) initializeChannel(user_id string) (bool, error) {
 	id := uuid.New().String()
 	now := time.Now()
 
-	streamkey, playbackIds, err := db.createUserStreamInfo()
+	mux, err := db.createUserStreamInfo()
 
 	res, err := db.client.NewRaw(
-		"INSERT INTO channels (id, user_id, title, notification, category, streamkey, playback_id, tags, is_branded, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET title=EXCLUDED.title, notification=EXCLUDED.notification, tags=EXCLUDED.tags",
-		id, user_id, "", "", "", streamkey, playbackIds[0].Id, "", false, now,
+		"INSERT INTO channels (id, user_id, title, notification, category, streamkey, playback_id, livestream_id, tags, is_branded, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET title=EXCLUDED.title, notification=EXCLUDED.notification, tags=EXCLUDED.tags",
+		id, user_id, "", "", "", mux.Data.StreamKey, mux.Data.PlaybackIds[0].Id, mux.Data.Id, "", false, now,
 	).Exec(context.Background())
 
 	if err != nil {
@@ -51,7 +51,28 @@ func (db *BUN) initializeChannel(user_id string) (bool, error) {
 	return false, nil
 }
 
-func (db *BUN) createUserStreamInfo() (string, []muxgo.PlaybackId, error) {
+func (db *BUN) deleteChannel(user_id string) (bool, error) {
+	var channel model.Channel
+	res, err := db.client.NewDelete().Model(&channel).Where("user_id = ?", user_id).Exec(context.Background())
+
+	if err != nil {
+		return false, err
+	}
+
+	affected, err := res.RowsAffected()
+
+	if err != nil {
+		return false, err
+	}
+
+	if affected > 0 {
+		return true, nil
+	}
+
+	return true, nil
+}
+
+func (db *BUN) createUserStreamInfo() (muxgo.LiveStreamResponse, error) {
 	client := muxgo.NewAPIClient(
 		muxgo.NewConfiguration(muxgo.WithBasicAuth(os.Getenv("MUX_ACCESS"), os.Getenv("MUX_SECRET"))))
 
@@ -61,10 +82,24 @@ func (db *BUN) createUserStreamInfo() (string, []muxgo.PlaybackId, error) {
 	r, err := client.LiveStreamsApi.CreateLiveStream(csr)
 
 	if err != nil {
-		return "", nil, err
+		return r, err
 	}
 
-	return r.Data.StreamKey, r.Data.PlaybackIds, nil
+	return r, nil
+}
+
+func (db *BUN) deleteLiveStream(id string) (bool, error) {
+	client := muxgo.NewAPIClient(
+		muxgo.NewConfiguration(muxgo.WithBasicAuth(os.Getenv("MUX_ACCESS"), os.Getenv("MUX_SECRET"))))
+
+	// generate livestream.
+	err := client.LiveStreamsApi.DeleteLiveStream(id)
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (db *BUN) createStripeCustomer(user model.User) model.User {
@@ -344,6 +379,12 @@ func (db *BUN) DeleteUser(id string) (bool, error) {
 	}
 
 	if rows > 0 {
+		channel, _ := db.GetChannelInfo(id)
+		liveDeleted, _ := db.deleteLiveStream(channel.LivestreamID)
+		if liveDeleted {
+			fmt.Println("deleted livestream from mux successfully")
+		}
+		db.deleteChannel(id)
 		return true, nil
 	}
 
@@ -385,6 +426,19 @@ func (db *BUN) GetUser(id string) (*model.User, error) {
 	result.ChatIdentity = chat_identity
 
 	return &result, nil
+}
+
+func (db *BUN) GetUsers() ([]*model.User, error) {
+	var result []*model.User
+	row := db.client.NewRaw("SELECT * FROM users LIMIT 20").Scan(context.Background(), &result)
+
+	if row != nil {
+		fmt.Print("\n Error found when query for all users: ", row)
+		return nil, row
+	}
+
+	return result, nil
+
 }
 
 func (db *BUN) GetAccount(email string) (*model.User, error) {
