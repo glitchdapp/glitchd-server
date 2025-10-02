@@ -61,6 +61,18 @@ func (db *BUN) GetLikes(post_id string) (int, error) {
 	return count, nil
 }
 
+func (db *BUN) GetPostLikes(post_id string) ([]*model.Like, error) {
+	var likes []*model.Like
+
+	err := db.client.NewSelect().Model(&likes).Where("post_id = ?", post_id).Scan(context.Background())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return likes, nil
+}
+
 func (db *BUN) GetLikedByUser(post_id string, user_id string) (bool, error) {
 	var likes model.Like
 

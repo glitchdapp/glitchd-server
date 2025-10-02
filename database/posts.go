@@ -47,7 +47,9 @@ func (db *BUN) GetPostByID(post_id string) (*model.Post, error) {
 	}
 
 	user, _ := db.GetUser(post.Author)
+	likes, _ := db.GetPostLikes(post.ID)
 	post.User = user
+	post.Likes = likes
 
 	return &post, nil
 }
@@ -105,7 +107,9 @@ func (db *BUN) GetPosts(first int, after string) (*model.PostsResult, error) {
 	for _, v := range posts {
 
 		user, _ := db.GetUser(v.Author)
+		likes, _ := db.GetPostLikes(v.ID)
 		v.User = user
+		v.Likes = likes
 
 		edges = append(edges, &model.PostsEdge{
 			Cursor: base64.StdEncoding.EncodeToString([]byte(v.CreatedAt.String())),
@@ -192,7 +196,9 @@ func (db *BUN) GetUserPosts(channel_id string, first int, after string) (*model.
 
 	for _, v := range posts {
 		user, _ := db.GetUser(v.Author)
+		likes, _ := db.GetPostLikes(v.ID)
 		v.User = user
+		v.Likes = likes
 		edges = append(edges, &model.PostsEdge{
 			Cursor: base64.StdEncoding.EncodeToString([]byte(v.CreatedAt.String())),
 			Node:   v,
@@ -278,7 +284,9 @@ func (db *BUN) GetPostsByQuery(query string, first int, after string) (*model.Po
 
 	for _, v := range posts {
 		user, _ := db.GetUser(v.Author)
+		likes, _ := db.GetPostLikes(v.ID)
 		v.User = user
+		v.Likes = likes
 		edges = append(edges, &model.PostsEdge{
 			Cursor: base64.StdEncoding.EncodeToString([]byte(v.CreatedAt.String())),
 			Node:   v,
@@ -364,7 +372,9 @@ func (db *BUN) GetPostReplies(post_id string, first int, after string) (*model.P
 
 	for _, v := range posts {
 		user, _ := db.GetUser(v.Author)
+		likes, _ := db.GetPostLikes(v.ID)
 		v.User = user
+		v.Likes = likes
 		edges = append(edges, &model.PostsEdge{
 			Cursor: base64.StdEncoding.EncodeToString([]byte(v.CreatedAt.String())),
 			Node:   v,

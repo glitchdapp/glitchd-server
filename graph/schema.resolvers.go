@@ -133,7 +133,6 @@ func (r *mutationResolver) PostMessage(ctx context.Context, input *model.NewMess
 				}
 				return true
 			})
-
 		}
 	}
 
@@ -655,6 +654,16 @@ func (r *subscriptionResolver) GetVideoJob(ctx context.Context, jobID string) (<
 	})
 
 	return events, nil
+}
+
+// GetFeedPosts is the resolver for the getFeedPosts field.
+func (r *subscriptionResolver) GetFeedPosts(ctx context.Context) (<-chan *model.Post, error) {
+	panic(fmt.Errorf("not implemented: GetFeedPosts - getFeedPosts"))
+}
+
+// GetProfilePosts is the resolver for the getProfilePosts field.
+func (r *subscriptionResolver) GetProfilePosts(ctx context.Context) (<-chan *model.Post, error) {
+	panic(fmt.Errorf("not implemented: GetProfilePosts - getProfilePosts"))
 }
 
 // Mutation returns MutationResolver implementation.

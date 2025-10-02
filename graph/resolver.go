@@ -17,6 +17,7 @@ type Resolver struct {
 	ChannelViewers sync.Map
 	Activity       sync.Map
 	Job            sync.Map
+	Post           sync.Map
 }
 
 type ChatResolver struct {
@@ -95,6 +96,23 @@ type ActivityPage struct {
 	Observers sync.Map
 }
 
+type PostsResolver struct {
+	ChannelID      string
+	Post           *model.Post
+	PostsObservers sync.Map
+}
+
+type PostObserver struct {
+	ChannelID string
+	Post      chan *model.Post
+}
+
+type PostPage struct {
+	ChannelID string
+	Post      *model.Post
+	Observers sync.Map
+}
+
 func (r *Resolver) getRoom(channelID string) *Chatroom {
 	room, _ := r.Rooms.LoadOrStore(channelID, &Chatroom{
 		ChannelID: channelID,
@@ -137,6 +155,15 @@ func (r *Resolver) getChannelActivity(channelID string) *ActivityPage {
 	})
 
 	return page.(*ActivityPage)
+}
+
+func (r *Resolver) getPosts(channelID string) *PostPage {
+	page, _ := r.Post.LoadOrStore(channelID, &PostPage{
+		ChannelID: channelID,
+		Observers: sync.Map{},
+	})
+
+	return page.(*PostPage)
 }
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/glitchd/glitchd-server/database"
@@ -44,6 +45,9 @@ func main() {
 
 	srv := handler.New(graph.NewExecutableSchema(c))
 	srv.AddTransport(transport.POST{})
+	if os.Getenv("ENVIRONMENT") == "development" {
+		srv.Use(extension.Introspection{})
+	}
 	srv.AddTransport(&transport.Websocket{
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,

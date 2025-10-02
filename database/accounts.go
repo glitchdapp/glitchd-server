@@ -32,7 +32,7 @@ func (db *BUN) initializeChannel(user_id string) (bool, error) {
 
 	res, err := db.client.NewRaw(
 		"INSERT INTO channels (id, user_id, title, notification, category, streamkey, playback_id, livestream_id, tags, is_branded, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET title=EXCLUDED.title, notification=EXCLUDED.notification, tags=EXCLUDED.tags",
-		id, user_id, "", "", "", mux.Data.StreamKey, mux.Data.PlaybackIds[0].Id, mux.Data.Id, "", false, now,
+		id, user_id, "Channel Title", "Come Chill", "all", mux.Data.StreamKey, mux.Data.PlaybackIds[0].Id, mux.Data.Id, "", false, now,
 	).Exec(context.Background())
 
 	if err != nil {

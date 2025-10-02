@@ -263,6 +263,7 @@ type Post struct {
 	Media     string    `json:"media"`
 	MediaType string    `json:"media_type"`
 	ReplyTo   string    `json:"reply_to"`
+	Likes     []*Like   `json:"likes"`
 	CreatedAt time.Time `json:"created_at"`
 }
 

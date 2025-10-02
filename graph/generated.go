@@ -250,6 +250,7 @@ type ComplexityRoot struct {
 		Author    func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		ID        func(childComplexity int) int
+		Likes     func(childComplexity int) int
 		Media     func(childComplexity int) int
 		MediaType func(childComplexity int) int
 		Message   func(childComplexity int) int
@@ -315,7 +316,9 @@ type ComplexityRoot struct {
 	Subscription struct {
 		GetActivity       func(childComplexity int, channelID string) int
 		GetChannelViewers func(childComplexity int, channelID string, userID string) int
+		GetFeedPosts      func(childComplexity int) int
 		GetMessages       func(childComplexity int, channelID string, userID string) int
+		GetProfilePosts   func(childComplexity int) int
 		GetVideoJob       func(childComplexity int, jobID string) int
 		GetVideoViewers   func(childComplexity int, videoID string) int
 	}
@@ -485,6 +488,8 @@ type SubscriptionResolver interface {
 	GetChannelViewers(ctx context.Context, channelID string, userID string) (<-chan int, error)
 	GetActivity(ctx context.Context, channelID string) (<-chan *model.Activity, error)
 	GetVideoJob(ctx context.Context, jobID string) (<-chan string, error)
+	GetFeedPosts(ctx context.Context) (<-chan *model.Post, error)
+	GetProfilePosts(ctx context.Context) (<-chan *model.Post, error)
 }
 
 type executableSchema struct {
@@ -1673,6 +1678,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Post.ID(childComplexity), true
 
+	case "Post.likes":
+		if e.complexity.Post.Likes == nil {
+			break
+		}
+
+		return e.complexity.Post.Likes(childComplexity), true
+
 	case "Post.media":
 		if e.complexity.Post.Media == nil {
 			break
@@ -2259,6 +2271,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Subscription.GetChannelViewers(childComplexity, args["channel_id"].(string), args["user_id"].(string)), true
 
+	case "Subscription.getFeedPosts":
+		if e.complexity.Subscription.GetFeedPosts == nil {
+			break
+		}
+
+		return e.complexity.Subscription.GetFeedPosts(childComplexity), true
+
 	case "Subscription.getMessages":
 		if e.complexity.Subscription.GetMessages == nil {
 			break
@@ -2270,6 +2289,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Subscription.GetMessages(childComplexity, args["channel_id"].(string), args["user_id"].(string)), true
+
+	case "Subscription.getProfilePosts":
+		if e.complexity.Subscription.GetProfilePosts == nil {
+			break
+		}
+
+		return e.complexity.Subscription.GetProfilePosts(childComplexity), true
 
 	case "Subscription.getVideoJob":
 		if e.complexity.Subscription.GetVideoJob == nil {
@@ -12153,6 +12179,60 @@ func (ec *executionContext) fieldContext_Post_reply_to(ctx context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Post_likes(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Post_likes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Likes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Like)
+	fc.Result = res
+	return ec.marshalNLike2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐLikeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Post_likes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Like_id(ctx, field)
+			case "post_id":
+				return ec.fieldContext_Like_post_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_Like_user_id(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Like_created_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Like", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Post_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Post_created_at(ctx, field)
 	if err != nil {
@@ -12294,6 +12374,8 @@ func (ec *executionContext) fieldContext_PostsEdge_node(ctx context.Context, fie
 				return ec.fieldContext_Post_media_type(ctx, field)
 			case "reply_to":
 				return ec.fieldContext_Post_reply_to(ctx, field)
+			case "likes":
+				return ec.fieldContext_Post_likes(ctx, field)
 			case "created_at":
 				return ec.fieldContext_Post_created_at(ctx, field)
 			}
@@ -15091,6 +15173,8 @@ func (ec *executionContext) fieldContext_Query_getPostById(ctx context.Context, 
 				return ec.fieldContext_Post_media_type(ctx, field)
 			case "reply_to":
 				return ec.fieldContext_Post_reply_to(ctx, field)
+			case "likes":
+				return ec.fieldContext_Post_likes(ctx, field)
 			case "created_at":
 				return ec.fieldContext_Post_created_at(ctx, field)
 			}
@@ -15855,6 +15939,162 @@ func (ec *executionContext) fieldContext_Subscription_getVideoJob(ctx context.Co
 	if fc.Args, err = ec.field_Subscription_getVideoJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_getFeedPosts(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_getFeedPosts(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().GetFeedPosts(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.Post):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNPost2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_getFeedPosts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "author":
+				return ec.fieldContext_Post_author(ctx, field)
+			case "user":
+				return ec.fieldContext_Post_user(ctx, field)
+			case "message":
+				return ec.fieldContext_Post_message(ctx, field)
+			case "media":
+				return ec.fieldContext_Post_media(ctx, field)
+			case "media_type":
+				return ec.fieldContext_Post_media_type(ctx, field)
+			case "reply_to":
+				return ec.fieldContext_Post_reply_to(ctx, field)
+			case "likes":
+				return ec.fieldContext_Post_likes(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Post_created_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_getProfilePosts(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_getProfilePosts(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().GetProfilePosts(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.Post):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNPost2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_getProfilePosts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "author":
+				return ec.fieldContext_Post_author(ctx, field)
+			case "user":
+				return ec.fieldContext_Post_user(ctx, field)
+			case "message":
+				return ec.fieldContext_Post_message(ctx, field)
+			case "media":
+				return ec.fieldContext_Post_media(ctx, field)
+			case "media_type":
+				return ec.fieldContext_Post_media_type(ctx, field)
+			case "reply_to":
+				return ec.fieldContext_Post_reply_to(ctx, field)
+			case "likes":
+				return ec.fieldContext_Post_likes(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Post_created_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -22313,6 +22553,11 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "likes":
+			out.Values[i] = ec._Post_likes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "created_at":
 			out.Values[i] = ec._Post_created_at(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -23393,6 +23638,10 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_getActivity(ctx, fields[0])
 	case "getVideoJob":
 		return ec._Subscription_getVideoJob(ctx, fields[0])
+	case "getFeedPosts":
+		return ec._Subscription_getFeedPosts(ctx, fields[0])
+	case "getProfilePosts":
+		return ec._Subscription_getProfilePosts(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -24558,6 +24807,60 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNLike2ᚕᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐLikeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Like) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNLike2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐLike(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNLike2ᚖgithubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐLike(ctx context.Context, sel ast.SelectionSet, v *model.Like) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Like(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNMembership2githubᚗcomᚋglitchdᚋglitchdᚑserverᚋgraphᚋmodelᚐMembership(ctx context.Context, sel ast.SelectionSet, v model.Membership) graphql.Marshaler {

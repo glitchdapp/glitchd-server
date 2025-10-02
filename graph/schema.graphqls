@@ -45,6 +45,10 @@ type User {
   updated_at: Time!
 }
 
+type UserDetails {
+    mobile_push_token: String!
+}
+
 input NewUser {
   name: String!
   email: String!
@@ -357,6 +361,7 @@ type Post {
   media: String!
   media_type: String!
   reply_to: String!
+  likes: [Like!]!
   created_at: Time!
 }
 type PostsResult {
@@ -390,6 +395,9 @@ type Subscription {
   getChannelViewers(channel_id: String!, user_id: String!): Int!
   getActivity(channel_id: String!): Activity!
   getVideoJob(job_id: String!): String!
+
+  getFeedPosts: Post!
+  getProfilePosts: Post!
 }
 
 type Query {

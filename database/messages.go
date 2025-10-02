@@ -59,7 +59,7 @@ func (db *BUN) CreateMessage(input *model.NewMessage) (*model.Message, error) {
 func (db *BUN) GetRecentMessages(channelID string) ([]*model.Message, error) {
 	var messages []*model.Message
 	err := db.client.NewRaw(
-		"SELECT msg.* FROM (SELECT * FROM ? WHERE channel_id = ? ORDER BY created_at DESC LIMIT 20) msg ORDER BY created_at ASC",
+		"SELECT msg.* FROM (SELECT * FROM ? WHERE channel_id = ? ORDER BY created_at DESC LIMIT 50) msg ORDER BY created_at ASC",
 		bun.Ident("messages"), channelID).Scan(context.Background(), &messages)
 
 	for index, message := range messages {
